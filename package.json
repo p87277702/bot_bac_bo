@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node bot_bacbo.js"
   },
-  "keywords": [],
+  "keywords": ["bacbo", "casino", "bot", "telegram"],
   "author": "",
   "license": "ISC",
   "dependencies": {

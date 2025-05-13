@@ -96,7 +96,6 @@ let page = null;
 
 // Função atualizada para buscar resultados do Bac Bo usando a nova div
 // Função atualizada para funcionar no Windows - correção de erros específicos
-// Função getBacBoResultado otimizada para ambiente de servidor Ubuntu VPS
 async function getBacBoResultado() {
   try {
     console.log("Buscando resultados do Bac Bo...");
@@ -105,16 +104,14 @@ async function getBacBoResultado() {
     if (!browser) {
       console.log("Iniciando navegador pela primeira vez...");
 
-      // Configuração otimizada para ambiente VPS Linux
+      // Configuração otimizada para Windows
       const options = {
-        headless: "new", // Usar o novo modo headless
+        headless: false, // Modo não-headless para depuração
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
           "--disable-gpu",
-          "--disable-features=AudioServiceOutOfProcess",
-          "--disable-extensions",
           "--window-size=1366,768",
         ],
         defaultViewport: {
@@ -123,14 +120,6 @@ async function getBacBoResultado() {
         },
       };
 
-      // Verifica se o caminho foi especificado nas variáveis de ambiente
-      if (process.env.CHROME_PATH) {
-        console.log(
-          `Usando caminho do Chrome especificado nas variáveis de ambiente: ${process.env.CHROME_PATH}`
-        );
-        options.executablePath = process.env.CHROME_PATH;
-      }
-
       try {
         browser = await puppeteer.launch(options);
         console.log("Navegador iniciado com sucesso!");
@@ -138,64 +127,22 @@ async function getBacBoResultado() {
         console.log("Abrindo nova página...");
         page = await browser.newPage();
 
-        // Configurando o User-Agent para parecer um navegador normal
+        // Configurando o User-Agent
         await page.setUserAgent(
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
         );
 
-        // Otimizações adicionais para ambiente VPS
-        await page.setRequestInterception(true);
-        page.on("request", (request) => {
-          // Bloquear recursos desnecessários para economizar largura de banda e CPU
-          const blockedResourceTypes = ["image", "media", "font", "stylesheet"];
-          if (
-            blockedResourceTypes.includes(request.resourceType()) &&
-            !request.url().includes("casinoscores.com") // só bloqueia recursos de terceiros
-          ) {
-            request.abort();
-          } else {
-            request.continue();
-          }
-        });
+        // Desabilitar o bloqueio de recursos para resolver problemas de carregamento
+        // Nota: em ambiente de produção, podemos reativá-lo para economizar recursos
+        // await page.setRequestInterception(true);
+        // page.on("request", (request) => {
+        //   request.continue();
+        // });
       } catch (error) {
         console.error(`Erro ao iniciar o navegador: ${error.message}`);
-        console.error("Tentando alternativas para executar o Chrome...");
-
-        // Tente localizar o Chrome usando comando do sistema
-        const { execSync } = require("child_process");
-        try {
-          // Tenta vários possíveis caminhos do Chrome/Chromium no Linux
-          let chromePath = "";
-          try {
-            chromePath = execSync("which google-chrome").toString().trim();
-          } catch (e) {
-            try {
-              chromePath = execSync("which chromium-browser").toString().trim();
-            } catch (e) {
-              try {
-                chromePath = execSync("which chromium").toString().trim();
-              } catch (e) {
-                throw new Error(
-                  "Nenhum executável do Chrome/Chromium encontrado."
-                );
-              }
-            }
-          }
-
-          console.log(
-            `Chrome/Chromium encontrado no sistema em: ${chromePath}`
-          );
-          options.executablePath = chromePath;
-          browser = await puppeteer.launch(options);
-          console.log("Navegador iniciado após usar localização alternativa!");
-        } catch (fallbackError) {
-          console.error(
-            `Erro após tentativa alternativa: ${fallbackError.message}`
-          );
-          throw new Error(
-            "Não foi possível iniciar o navegador após tentativas alternativas."
-          );
-        }
+        throw new Error(
+          `Não foi possível iniciar o navegador: ${error.message}`
+        );
       }
     } else {
       console.log("Navegador já está aberto.");
@@ -206,12 +153,14 @@ async function getBacBoResultado() {
       console.error("A página não foi inicializada. Tentando reabrir...");
       try {
         page = await browser.newPage();
-        await page.setUserAgent(
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        );
       } catch (error) {
         console.error(`Erro ao criar nova página: ${error.message}`);
         // Força reinicialização do browser na próxima chamada
+        if (browser) {
+          await browser
+            .close()
+            .catch((e) => console.error("Erro ao fechar browser:", e));
+        }
         browser = null;
         return;
       }
@@ -221,7 +170,7 @@ async function getBacBoResultado() {
     verificarMudancaDeDia();
 
     try {
-      // Navegar para a página
+      // Navegar para a página - não precisamos verificar a URL atual
       console.log("Navegando para casinoscores.com/pt-br/bac-bo/...");
       await page.goto("https://casinoscores.com/pt-br/bac-bo/", {
         waitUntil: "networkidle2",
@@ -237,7 +186,7 @@ async function getBacBoResultado() {
     }
 
     // Esperar um tempo adicional para garantir que a página carregue completamente
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     console.log(
       "Verificando se o seletor '#LatestSpinsWidget' existe na página..."
@@ -254,7 +203,24 @@ async function getBacBoResultado() {
       });
 
     if (!seletorExiste) {
-      console.error("Seletor '#LatestSpinsWidget' não encontrado na página.");
+      console.error(
+        "Seletor '#LatestSpinsWidget' não encontrado na página. Verificando conteúdo da página..."
+      );
+
+      // Extrair o título da página para diagnóstico
+      const titulo = await page
+        .title()
+        .catch(() => "Não foi possível obter o título");
+      console.log(`Título da página: ${titulo}`);
+
+      // Salvar screenshot para diagnóstico
+      await page
+        .screenshot({ path: "debug-screenshot.png" })
+        .catch((e) => console.error("Erro ao salvar screenshot:", e));
+      console.log(
+        "Screenshot salvo como 'debug-screenshot.png' para diagnóstico"
+      );
+
       return; // Sair da função para tentar novamente na próxima execução
     }
 
@@ -276,6 +242,10 @@ async function getBacBoResultado() {
             return [];
           }
 
+          console.log(
+            `Encontradas ${imagensResultado.length} imagens de resultados`
+          );
+
           // Processamos cada imagem (cada resultado)
           Array.from(imagensResultado).forEach((imagem, index) => {
             try {
@@ -289,6 +259,7 @@ async function getBacBoResultado() {
               } else if (srcImagem.includes("/TIE.png")) {
                 resultado = "tie";
               } else {
+                console.log(`URL de imagem não reconhecido: ${srcImagem}`);
                 return; // Ignora se não for um resultado conhecido
               }
 
@@ -1587,7 +1558,6 @@ process.on("SIGTERM", async () => {
 });
 
 // Inicia o bot - versão para depuração no Windows
-// Função de inicialização para ambiente Ubuntu VPS
 (async function () {
   try {
     console.log("🎲 Bot do Bac Bo iniciado!");
@@ -1616,9 +1586,12 @@ process.on("SIGTERM", async () => {
     // Executa a primeira vez
     await getBacBoResultado();
 
-    // No ambiente de produção, use um intervalo menor para capturar resultados mais rapidamente
-    console.log("⏱️ Configurando intervalo de execução a cada 8 segundos");
-    setInterval(getBacBoResultado, 8000);
+    // No modo de depuração do Windows, vamos usar um intervalo maior
+    // para evitar sobrecarga e possíveis problemas
+    console.log(
+      "⏱️ Configurando intervalo de execução a cada 15 segundos (modo depuração)"
+    );
+    setInterval(getBacBoResultado, 15000);
     console.log("⏱️ Configurando verificação de mudança de dia a cada minuto");
     setInterval(verificarMudancaDeDia, 60000); // Verifica a cada minuto
   } catch (err) {
