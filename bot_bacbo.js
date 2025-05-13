@@ -1633,7 +1633,7 @@ process.on("SIGTERM", async () => {
 
 // Inicia servidor Express para manter o bot vivo no Render
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.get("/", (req, res) => {
   res.send("✅ Bot do Bac Bo está rodando!");
