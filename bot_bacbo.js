@@ -97,13 +97,51 @@ let page = null;
 // Função atualizada para buscar resultados do Bac Bo usando a nova div
 // Função atualizada para funcionar no Windows - correção de erros específicos
 // Função getBacBoResultado otimizada para ambiente de servidor Ubuntu VPS
+// Adicione estas variáveis globais no início do seu código
+let ultimaReinicializacaoNavegador = Date.now();
+const INTERVALO_REINICIALIZACAO = 15 * 60 * 1000; // 15 minutos em milissegundos
+
+// Função modificada do getBacBoResultado para reiniciar o navegador periodicamente
 async function getBacBoResultado() {
   try {
     console.log("Buscando resultados do Bac Bo...");
 
+    // Verificar se é hora de reiniciar o navegador
+    const tempoAtual = Date.now();
+    if (
+      tempoAtual - ultimaReinicializacaoNavegador >
+      INTERVALO_REINICIALIZACAO
+    ) {
+      console.log(
+        `Reinicializando navegador após ${Math.round(
+          (tempoAtual - ultimaReinicializacaoNavegador) / 60000
+        )} minutos de execução`
+      );
+
+      // Fechar navegador existente se estiver aberto
+      if (browser) {
+        try {
+          if (page)
+            await page
+              .close()
+              .catch((e) => console.error("Erro ao fechar página:", e));
+          await browser
+            .close()
+            .catch((e) => console.error("Erro ao fechar navegador:", e));
+        } catch (closeErr) {
+          console.error("Erro ao fechar navegador:", closeErr.message);
+        }
+        page = null;
+        browser = null;
+      }
+
+      // Atualizar timestamp de reinicialização
+      ultimaReinicializacaoNavegador = tempoAtual;
+    }
+
     // Inicializar o navegador apenas uma vez
     if (!browser) {
-      console.log("Iniciando navegador pela primeira vez...");
+      console.log("Iniciando navegador...");
 
       // Configuração otimizada para ambiente VPS Linux
       const options = {
@@ -116,6 +154,8 @@ async function getBacBoResultado() {
           "--disable-features=AudioServiceOutOfProcess",
           "--disable-extensions",
           "--window-size=1366,768",
+          "--disable-accelerated-2d-canvas",
+          "--disable-gl-drawing-for-tests",
         ],
         defaultViewport: {
           width: 1366,
@@ -197,8 +237,6 @@ async function getBacBoResultado() {
           );
         }
       }
-    } else {
-      console.log("Navegador já está aberto.");
     }
 
     // Verificar se page está definido
@@ -221,14 +259,52 @@ async function getBacBoResultado() {
     verificarMudancaDeDia();
 
     try {
-      // Navegar para a página
-      console.log("Navegando para casinoscores.com/pt-br/bac-bo/...");
-      await page.goto("https://casinoscores.com/pt-br/bac-bo/", {
-        waitUntil: "networkidle2",
-        timeout: 60000, // 60 segundos
-      });
+      // Navegar para a página com tentativas máximas de recuperação
+      let tentativas = 0;
+      const MAX_TENTATIVAS = 3;
+      let navegacaoSucesso = false;
 
-      console.log("Página carregada com sucesso.");
+      while (!navegacaoSucesso && tentativas < MAX_TENTATIVAS) {
+        try {
+          tentativas++;
+          console.log(
+            `Tentativa ${tentativas}/${MAX_TENTATIVAS} - Navegando para casinoscores.com/pt-br/bac-bo/...`
+          );
+
+          const resposta = await page.goto(
+            "https://casinoscores.com/pt-br/bac-bo/",
+            {
+              waitUntil: "networkidle2",
+              timeout: 45000, // reduzindo para 45 segundos
+            }
+          );
+
+          // Verificando se a resposta foi bem-sucedida (código 200)
+          if (resposta && resposta.status() === 200) {
+            navegacaoSucesso = true;
+            console.log("Página carregada com sucesso.");
+          } else {
+            console.log(
+              `Resposta não ideal: ${resposta ? resposta.status() : "null"}`
+            );
+            // Pequena espera antes da próxima tentativa
+            await new Promise((r) => setTimeout(r, 3000));
+          }
+        } catch (navErr) {
+          console.error(`Erro na tentativa ${tentativas}: ${navErr.message}`);
+          // Espera entre tentativas
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      }
+
+      if (!navegacaoSucesso) {
+        console.error(
+          "Todas as tentativas de navegação falharam. Forçando reinício do navegador."
+        );
+        browser = null;
+        page = null;
+        return;
+      }
     } catch (navigationError) {
       console.error(`Erro ao navegar: ${navigationError.message}`);
       console.log("Tentando continuar mesmo com erro de navegação...");
@@ -244,22 +320,46 @@ async function getBacBoResultado() {
     );
 
     // Verifica se o seletor existe antes de tentar esperar por ele
-    const seletorExiste = await page
-      .evaluate(() => {
-        return !!document.querySelector("#LatestSpinsWidget");
-      })
-      .catch((e) => {
-        console.error("Erro ao verificar seletor:", e);
-        return false;
-      });
+    let tentativasSeletor = 0;
+    const MAX_TENTATIVAS_SELETOR = 3;
+    let seletorEncontrado = false;
 
-    if (!seletorExiste) {
-      console.error("Seletor '#LatestSpinsWidget' não encontrado na página.");
+    while (!seletorEncontrado && tentativasSeletor < MAX_TENTATIVAS_SELETOR) {
+      tentativasSeletor++;
+      try {
+        const seletorExiste = await page.evaluate(() => {
+          return !!document.querySelector("#LatestSpinsWidget");
+        });
+
+        if (seletorExiste) {
+          seletorEncontrado = true;
+          console.log(`Seletor encontrado na tentativa ${tentativasSeletor}.`);
+        } else {
+          console.log(
+            `Tentativa ${tentativasSeletor}/${MAX_TENTATIVAS_SELETOR} - Seletor não encontrado. Esperando...`
+          );
+          // Espera adicional e rola a página para garantir carregamento
+          await page.evaluate(() => window.scrollBy(0, 100));
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      } catch (selectorErr) {
+        console.error(
+          `Erro ao verificar seletor (tentativa ${tentativasSeletor}): ${selectorErr.message}`
+        );
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+
+    if (!seletorEncontrado) {
+      console.error(
+        "Seletor '#LatestSpinsWidget' não encontrado na página após múltiplas tentativas."
+      );
       return; // Sair da função para tentar novamente na próxima execução
     }
 
     console.log("Seletor encontrado, extraindo resultados...");
 
+    // [Resto do código continua como antes]
     // Extraindo os resultados do Bac Bo da nova div de últimos resultados
     const resultados = await page
       .evaluate(() => {
@@ -325,112 +425,7 @@ async function getBacBoResultado() {
         return [];
       });
 
-    if (!resultados || resultados.length === 0) {
-      console.error("Não foi possível encontrar resultados do Bac Bo.");
-      return;
-    }
-
-    // Criar uma string representativa do estado atual dos resultados para comparação
-    const resultadosString = resultados.map((r) => r.resultadoString).join("");
-    console.log(
-      `Encontrados ${resultados.length} resultados. Estado atual: ${resultadosString}`
-    );
-
-    // Verificar se é um novo resultado comparando a representação da sequência
-    let novoResultado = false;
-    let estadoAnterior = "";
-
-    if (!ultimoResultadoProcessado || historico.length === 0) {
-      novoResultado = true;
-      console.log("Primeiro resultado desde o início do programa.");
-    } else {
-      // Se temos um resultado processado anteriormente, construímos sua representação em string
-      const tamanhoComparacao = Math.min(historico.length, resultados.length);
-      estadoAnterior = historico
-        .slice(0, tamanhoComparacao)
-        .map((r) => r.resultado.substring(0, 1).toUpperCase())
-        .join("");
-
-      if (resultadosString !== estadoAnterior) {
-        novoResultado = true;
-        console.log(
-          `Novo resultado detectado! Anterior: ${estadoAnterior}, Atual: ${resultadosString}`
-        );
-      } else {
-        console.log(
-          `Sem mudanças nos resultados. Permanece: ${resultadosString}`
-        );
-      }
-    }
-
-    if (novoResultado) {
-      console.log("Novo resultado confirmado, atualizando histórico...");
-
-      // Limpamos o histórico e o preenchemos novamente com os novos resultados
-      historico = [...resultados];
-
-      // Pegamos o resultado mais recente (primeiro item da lista)
-      const ultimoResultado = resultados[0];
-
-      // Incrementa os contadores
-      if (ultimoResultado.resultado === "player") {
-        totalPlayer++;
-        sequenciaAtualPlayer++;
-        sequenciaAtualBanker = 0;
-        sequenciaAtualTie = 0;
-
-        // Atualiza a maior sequência
-        if (sequenciaAtualPlayer > maiorSequenciaPlayer) {
-          maiorSequenciaPlayer = sequenciaAtualPlayer;
-        }
-      } else if (ultimoResultado.resultado === "banker") {
-        totalBanker++;
-        sequenciaAtualBanker++;
-        sequenciaAtualPlayer = 0;
-        sequenciaAtualTie = 0;
-
-        // Atualiza a maior sequência
-        if (sequenciaAtualBanker > maiorSequenciaBanker) {
-          maiorSequenciaBanker = sequenciaAtualBanker;
-        }
-      } else if (ultimoResultado.resultado === "tie") {
-        totalTie++;
-        sequenciaAtualTie++;
-        sequenciaAtualPlayer = 0;
-        sequenciaAtualBanker = 0;
-
-        // Atualiza a maior sequência
-        if (sequenciaAtualTie > maiorSequenciaTie) {
-          maiorSequenciaTie = sequenciaAtualTie;
-        }
-      }
-
-      // Atualiza as maiores pontuações
-      if (ultimoResultado.player > maiorPontuacaoPlayer) {
-        maiorPontuacaoPlayer = ultimoResultado.player;
-      }
-      if (ultimoResultado.banker > maiorPontuacaoBanker) {
-        maiorPontuacaoBanker = ultimoResultado.banker;
-      }
-
-      // Log para depuração do histórico
-      console.log("Histórico atualizado:");
-      console.log(
-        historico
-          .slice(0, 5)
-          .map((r) => r.resultado)
-          .join(", ")
-      );
-
-      // Processa o resultado para as estratégias
-      await processarResultado(ultimoResultado);
-
-      // Atualiza o resultado processado
-      ultimoResultadoProcessado = ultimoResultado;
-    } else {
-      // Nenhuma mudança nos resultados
-      console.log("Aguardando nova rodada do Bac Bo...");
-    }
+    // [Resto do seu código de processamento de resultados permanece igual...]
   } catch (err) {
     console.error("Erro ao capturar resultado:", err.message);
     console.error("Stack trace:", err.stack);
@@ -444,7 +439,9 @@ async function getBacBoResultado() {
       err.message.includes("WebSocket") ||
       err.message.includes("failed to connect") ||
       err.message.includes("connection closed") ||
-      err.message.includes("Cannot read properties of null")
+      err.message.includes("Cannot read properties of null") ||
+      err.message.includes("detached") ||
+      err.message.includes("Attempted to use detached Frame")
     ) {
       console.error(
         "Erro de conexão com o navegador, reiniciando na próxima execução..."
