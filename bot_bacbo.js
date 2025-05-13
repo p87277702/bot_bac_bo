@@ -9,7 +9,7 @@ async function processarEstrategiaDiferencas(res) {
   // Classificar a diferença atual
   const diferencaAtual = res.diferenca;
   let tipoDiferenca = "pequena"; // 1-2
-  
+
   if (diferencaAtual >= 5) {
     tipoDiferenca = "grande"; // 5+
   } else if (diferencaAtual >= 3) {
@@ -19,20 +19,30 @@ async function processarEstrategiaDiferencas(res) {
   // Adiciona a diferença atual à lista
   estrategiaDiferencas.ultimasDiferencas.unshift({
     valor: diferencaAtual,
-    tipo: tipoDiferenca
+    tipo: tipoDiferenca,
   });
-  
+
   // Mantém apenas as últimas N diferenças
-  if (estrategiaDiferencas.ultimasDiferencas.length > estrategiaDiferencas.qtdConsiderada) {
-    estrategiaDiferencas.ultimasDiferencas = estrategiaDiferencas.ultimasDiferencas.slice(
-      0, estrategiaDiferencas.qtdConsiderada
-    );
+  if (
+    estrategiaDiferencas.ultimasDiferencas.length >
+    estrategiaDiferencas.qtdConsiderada
+  ) {
+    estrategiaDiferencas.ultimasDiferencas =
+      estrategiaDiferencas.ultimasDiferencas.slice(
+        0,
+        estrategiaDiferencas.qtdConsiderada
+      );
   }
 
   // Primeira rodada após detectar padrão (G0)
-  if (estrategiaDiferencas.alertaAtivo && estrategiaDiferencas.alvoProximaRodada && 
-      estrategiaDiferencas.rodadaG0 === null) {
-    console.log(`Alerta ativo para diferença ${estrategiaDiferencas.alvoProximaRodada}, primeira tentativa (G0).`);
+  if (
+    estrategiaDiferencas.alertaAtivo &&
+    estrategiaDiferencas.alvoProximaRodada &&
+    estrategiaDiferencas.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo para diferença ${estrategiaDiferencas.alvoProximaRodada}, primeira tentativa (G0).`
+    );
 
     // Verificamos se a diferença atual corresponde ao alvo esperado
     const acertou = tipoDiferenca === estrategiaDiferencas.alvoProximaRodada;
@@ -42,16 +52,28 @@ async function processarEstrategiaDiferencas(res) {
       estrategiaDiferencas.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaDiferencas.vitoriaConsecutiva > estrategiaDiferencas.maiorVitoriaConsecutiva) {
-        estrategiaDiferencas.maiorVitoriaConsecutiva = estrategiaDiferencas.vitoriaConsecutiva;
+      if (
+        estrategiaDiferencas.vitoriaConsecutiva >
+        estrategiaDiferencas.maiorVitoriaConsecutiva
+      ) {
+        estrategiaDiferencas.maiorVitoriaConsecutiva =
+          estrategiaDiferencas.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green! Diferença de ${diferencaAtual} é ${tipoDiferenca} como esperado [${estrategiaDiferencas.vitoriaConsecutiva} VITÓRIA${
+        `🟢 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ✅ Green! Diferença de ${diferencaAtual} é ${tipoDiferenca} como esperado [${
+          estrategiaDiferencas.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaDiferencas.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaDiferencas.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Diferenças: Greens: ${estrategiaDiferencas.totalGreens} | Reds: ${estrategiaDiferencas.totalReds}`,
+        }]\n📊 Diferenças: Greens: ${
+          estrategiaDiferencas.totalGreens
+        } | Reds: ${estrategiaDiferencas.totalReds}`,
         "diferencas"
       );
 
@@ -67,15 +89,24 @@ async function processarEstrategiaDiferencas(res) {
       resetarAlertaDiferencas();
     } else {
       await enviarTelegram(
-        `🔄 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], vamos para o G1... Diferença de ${diferencaAtual} é ${tipoDiferenca}, esperávamos ${estrategiaDiferencas.alvoProximaRodada}`,
+        `🔄 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], vamos para o G1... Diferença de ${diferencaAtual} é ${tipoDiferenca}, esperávamos ${
+          estrategiaDiferencas.alvoProximaRodada
+        }`,
         "diferencas"
       );
       estrategiaDiferencas.rodadaG0 = res;
     }
   }
   // Segunda rodada após detectar padrão (G1)
-  else if (estrategiaDiferencas.alertaAtivo && estrategiaDiferencas.alvoProximaRodada && 
-          estrategiaDiferencas.rodadaG0) {
+  else if (
+    estrategiaDiferencas.alertaAtivo &&
+    estrategiaDiferencas.alvoProximaRodada &&
+    estrategiaDiferencas.rodadaG0
+  ) {
     console.log("Processando G1 para estratégia de diferenças");
 
     // Verificamos se a diferença atual corresponde ao alvo esperado
@@ -86,16 +117,28 @@ async function processarEstrategiaDiferencas(res) {
       estrategiaDiferencas.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaDiferencas.vitoriaConsecutiva > estrategiaDiferencas.maiorVitoriaConsecutiva) {
-        estrategiaDiferencas.maiorVitoriaConsecutiva = estrategiaDiferencas.vitoriaConsecutiva;
+      if (
+        estrategiaDiferencas.vitoriaConsecutiva >
+        estrategiaDiferencas.maiorVitoriaConsecutiva
+      ) {
+        estrategiaDiferencas.maiorVitoriaConsecutiva =
+          estrategiaDiferencas.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green no G1! Diferença de ${diferencaAtual} é ${tipoDiferenca} como esperado [${estrategiaDiferencas.vitoriaConsecutiva} VITÓRIA${
+        `🟢 DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ✅ Green no G1! Diferença de ${diferencaAtual} é ${tipoDiferenca} como esperado [${
+          estrategiaDiferencas.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaDiferencas.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaDiferencas.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Diferenças: Greens: ${estrategiaDiferencas.totalGreens} | Reds: ${estrategiaDiferencas.totalReds}`,
+        }]\n📊 Diferenças: Greens: ${
+          estrategiaDiferencas.totalGreens
+        } | Reds: ${estrategiaDiferencas.totalReds}`,
         "diferencas"
       );
 
@@ -114,7 +157,15 @@ async function processarEstrategiaDiferencas(res) {
       estrategiaDiferencas.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
-        `❌ DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ❌ Red! Diferença de ${diferencaAtual} é ${tipoDiferenca}, esperávamos ${estrategiaDiferencas.alvoProximaRodada}\n📊 Diferenças: Greens: ${estrategiaDiferencas.totalGreens} | Reds: ${estrategiaDiferencas.totalReds}`,
+        `❌ DIFERENÇA ${estrategiaDiferencas.alvoProximaRodada.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ❌ Red! Diferença de ${diferencaAtual} é ${tipoDiferenca}, esperávamos ${
+          estrategiaDiferencas.alvoProximaRodada
+        }\n📊 Diferenças: Greens: ${estrategiaDiferencas.totalGreens} | Reds: ${
+          estrategiaDiferencas.totalReds
+        }`,
         "diferencas"
       );
 
@@ -132,19 +183,20 @@ async function processarEstrategiaDiferencas(res) {
   }
   // Análise normal do histórico para detecção de padrões de diferenças
   else if (
-    !estrategiaDiferencas.alertaAtivo && 
-    estrategiaDiferencas.ultimasDiferencas.length >= estrategiaDiferencas.qtdConsiderada
+    !estrategiaDiferencas.alertaAtivo &&
+    estrategiaDiferencas.ultimasDiferencas.length >=
+      estrategiaDiferencas.qtdConsiderada
   ) {
     // Verificar se temos uma sequência de diferenças do mesmo tipo
     const contagem = { pequena: 0, media: 0, grande: 0 };
-    
-    estrategiaDiferencas.ultimasDiferencas.forEach(d => {
+
+    estrategiaDiferencas.ultimasDiferencas.forEach((d) => {
       contagem[d.tipo]++;
     });
-    
+
     // Se temos predominância de um tipo de diferença (pelo menos 2 em 3)
     let tipoPredominante = null;
-    
+
     if (contagem.pequena >= 2) {
       tipoPredominante = "pequena";
     } else if (contagem.media >= 2) {
@@ -152,18 +204,20 @@ async function processarEstrategiaDiferencas(res) {
     } else if (contagem.grande >= 2) {
       tipoPredominante = "grande";
     }
-    
+
     if (tipoPredominante) {
       // O padrão sugere que o próximo tipo de diferença será o mesmo do predominante
       estrategiaDiferencas.alertaAtivo = true;
       estrategiaDiferencas.alvoProximaRodada = tipoPredominante;
-      
+
       await enviarTelegram(
         `⚠️ ESTRATÉGIA DE DIFERENÇAS: Detectadas ${contagem[tipoPredominante]} diferenças ${tipoPredominante}s nos últimos ${estrategiaDiferencas.qtdConsiderada} resultados!\n🎯 Entrada sugerida: Apostar em diferença ${tipoPredominante} na próxima rodada!`,
         "diferencas"
       );
-      
-      console.log(`Alerta ativado para diferenças! Próximo tipo esperado: ${estrategiaDiferencas.alvoProximaRodada}`);
+
+      console.log(
+        `Alerta ativado para diferenças! Próximo tipo esperado: ${estrategiaDiferencas.alvoProximaRodada}`
+      );
     }
   }
 }
@@ -174,13 +228,14 @@ function resetarAlertaDiferencas() {
   estrategiaDiferencas.alertaAtivo = false;
   estrategiaDiferencas.alvoProximaRodada = null;
   estrategiaDiferencas.rodadaG0 = null;
-  
+
   // Não limpamos todas as diferenças para manter histórico parcial
   // Mantemos as últimas 2 para continuar análise
   if (estrategiaDiferencas.ultimasDiferencas.length > 2) {
-    estrategiaDiferencas.ultimasDiferencas = estrategiaDiferencas.ultimasDiferencas.slice(0, 2);
+    estrategiaDiferencas.ultimasDiferencas =
+      estrategiaDiferencas.ultimasDiferencas.slice(0, 2);
   }
-}// Adicionando nova estratégia para Diferenças Específicas
+} // Adicionando nova estratégia para Diferenças Específicas
 let estrategiaDiferencas = {
   alertaAtivo: false,
   ultimasDiferencas: [], // Armazenar as últimas diferenças
@@ -191,8 +246,9 @@ let estrategiaDiferencas = {
   totalReds: 0,
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
-  maiorVitoriaConsecutiva: 0
-};const axios = require("axios");
+  maiorVitoriaConsecutiva: 0,
+};
+const axios = require("axios");
 const puppeteer = require("puppeteer");
 require("dotenv").config();
 const express = require("express");
@@ -242,22 +298,26 @@ let estrategiaSequencia = {
   totalReds: 0,
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
-  maiorVitoriaConsecutiva: 0
+  maiorVitoriaConsecutiva: 0,
 };
 
 // Estratégia 2: Diferença Pequena (Apostando no mesmo lado após detectar padrão)
 let estrategiaDiferencaPequena = {
   alertaAtivo: false,
   ultimasDiferencas: [], // Armazenar as últimas diferenças
+  ultimosResultados: [], // Lista para armazenar resultados com classificação alto/baixo
   qtdConsiderada: 3, // Quantas diferenças pequenas seguidas para ativar
   diferencaLimite: 2, // Diferença máxima para considerar "pequena"
+  limiteValorBaixo: 4, // Valor máximo para considerar "baixo"
+  limiteValorAlto: 8, // Valor mínimo para considerar "alto"
   rodadaG0: null,
-  alvoProximaRodada: null, // Armazenar o último resultado para apostar nele
+  proximoAlvo: null, // Para armazenar o alvo da próxima rodada (alto/baixo)
+  alvoProximaRodada: null, // Mantido para compatibilidade com código existente
   totalGreens: 0,
   totalReds: 0,
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
-  maiorVitoriaConsecutiva: 0
+  maiorVitoriaConsecutiva: 0,
 };
 
 // Estratégia 3: Após Empate (apostar no mesmo resultado anterior ao Tie)
@@ -269,7 +329,7 @@ let estrategiaAposEmpate = {
   totalReds: 0,
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
-  maiorVitoriaConsecutiva: 0
+  maiorVitoriaConsecutiva: 0,
 };
 
 // Estratégia 4: Alternância específica
@@ -283,7 +343,7 @@ let estrategiaAlternancia = {
   totalReds: 0,
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
-  maiorVitoriaConsecutiva: 0
+  maiorVitoriaConsecutiva: 0,
 };
 
 // Configuração do Telegram
@@ -299,7 +359,6 @@ const TELEGRAM_CHAT_ID_DIFERENCA = process.env.TELEGRAM_CHAT_ID_DIFERENCA;
 
 const TELEGRAM_TOKEN_APOS_EMPATE = process.env.TELEGRAM_TOKEN_APOS_EMPATE;
 const TELEGRAM_CHAT_ID_APOS_EMPATE = process.env.TELEGRAM_CHAT_ID_APOS_EMPATE;
-
 
 // Variáveis globais para controlar o navegador
 let browser = null;
@@ -360,18 +419,26 @@ async function getBacBoResultado() {
               try {
                 chromePath = execSync("which chromium").toString().trim();
               } catch (e) {
-                throw new Error("Nenhum executável do Chrome/Chromium encontrado.");
+                throw new Error(
+                  "Nenhum executável do Chrome/Chromium encontrado."
+                );
               }
             }
           }
 
-          console.log(`Chrome/Chromium encontrado no sistema em: ${chromePath}`);
+          console.log(
+            `Chrome/Chromium encontrado no sistema em: ${chromePath}`
+          );
           options.executablePath = chromePath;
           browser = await puppeteer.launch(options);
           console.log("Navegador iniciado após usar localização alternativa!");
         } catch (fallbackError) {
-          console.error(`Erro após tentativa alternativa: ${fallbackError.message}`);
-          throw new Error("Não foi possível iniciar o navegador após tentativas alternativas.");
+          console.error(
+            `Erro após tentativa alternativa: ${fallbackError.message}`
+          );
+          throw new Error(
+            "Não foi possível iniciar o navegador após tentativas alternativas."
+          );
         }
       }
 
@@ -429,79 +496,100 @@ async function getBacBoResultado() {
     console.log("Página carregada, extraindo resultados...");
 
     // Esperando pelo conteúdo carregar
-    await page.waitForSelector("#SpinHistoryTableBacBo", { timeout: 60000 }).catch(() => {
-      console.log("Timeout ao esperar pelo seletor, tentando extrair mesmo assim...");
-    });
+    await page
+      .waitForSelector("#SpinHistoryTableBacBo", { timeout: 60000 })
+      .catch(() => {
+        console.log(
+          "Timeout ao esperar pelo seletor, tentando extrair mesmo assim..."
+        );
+      });
 
     // Extraindo os resultados detalhados do Bac Bo da tabela de histórico
-    const resultados = await page.evaluate(() => {
-      try {
-        const items = [];
-        // Seletor para a tabela de histórico
-        const linhas = document.querySelectorAll("#SpinHistoryTableBacBo tbody tr");
+    const resultados = await page
+      .evaluate(() => {
+        try {
+          const items = [];
+          // Seletor para a tabela de histórico
+          const linhas = document.querySelectorAll(
+            "#SpinHistoryTableBacBo tbody tr"
+          );
 
-        if (!linhas || linhas.length === 0) {
-          console.error("Elementos da tabela não encontrados na página");
+          if (!linhas || linhas.length === 0) {
+            console.error("Elementos da tabela não encontrados na página");
+            return [];
+          }
+
+          // Processamos cada linha da tabela (cada resultado)
+          linhas.forEach((linha) => {
+            try {
+              // Extrai o resultado (Player/Banker/Tie) da imagem
+              const imagemResultado = linha.querySelector("img[alt='Êxito']");
+              if (!imagemResultado) return;
+
+              const srcImagem = imagemResultado.getAttribute("src");
+              let resultado = null;
+
+              if (srcImagem.includes("/P.png")) {
+                resultado = "player";
+              } else if (srcImagem.includes("/B.png")) {
+                resultado = "banker";
+              } else if (srcImagem.includes("/TIE.png")) {
+                resultado = "tie";
+              }
+
+              // Agora extraímos as pontuações
+              const divOutcome = linha.querySelector(".bac-bo-dice-outcome");
+              if (!divOutcome) return;
+
+              // Pontuação do Player
+              const spanPlayerSum = divOutcome.querySelector(
+                ".d-flex:nth-child(1) span"
+              );
+              const playerScore = spanPlayerSum
+                ? parseInt(spanPlayerSum.textContent.replace("Σ", ""), 10)
+                : 0;
+
+              // Pontuação do Banker
+              const spanBankerSum = divOutcome.querySelector(
+                ".d-flex:nth-child(2) span"
+              );
+              const bankerScore = spanBankerSum
+                ? parseInt(spanBankerSum.textContent.replace("Σ", ""), 10)
+                : 0;
+
+              // Diferença entre as pontuações
+              const diferenca = Math.abs(playerScore - bankerScore);
+
+              // Adiciona o resultado ao array de items
+              items.push({
+                player: playerScore,
+                banker: bankerScore,
+                resultado: resultado,
+                diferenca: diferenca,
+                // Adicionamos a hora para verificar se é um resultado novo
+                hora: linha.querySelector(".dateTime_DateTime__time__f0_Bn")
+                  ? linha.querySelector(".dateTime_DateTime__time__f0_Bn")
+                      .textContent
+                  : "",
+              });
+            } catch (rowError) {
+              console.error(
+                "Erro ao processar linha da tabela:",
+                rowError.message
+              );
+            }
+          });
+
+          return items;
+        } catch (evalError) {
+          console.error("Erro durante execução no browser:", evalError.message);
           return [];
         }
-
-        // Processamos cada linha da tabela (cada resultado)
-        linhas.forEach((linha) => {
-          try {
-            // Extrai o resultado (Player/Banker/Tie) da imagem
-            const imagemResultado = linha.querySelector("img[alt='Êxito']");
-            if (!imagemResultado) return;
-            
-            const srcImagem = imagemResultado.getAttribute("src");
-            let resultado = null;
-            
-            if (srcImagem.includes("/P.png")) {
-              resultado = "player";
-            } else if (srcImagem.includes("/B.png")) {
-              resultado = "banker";
-            } else if (srcImagem.includes("/TIE.png")) {
-              resultado = "tie";
-            }
-            
-            // Agora extraímos as pontuações
-            const divOutcome = linha.querySelector(".bac-bo-dice-outcome");
-            if (!divOutcome) return;
-            
-            // Pontuação do Player
-            const spanPlayerSum = divOutcome.querySelector(".d-flex:nth-child(1) span");
-            const playerScore = spanPlayerSum ? parseInt(spanPlayerSum.textContent.replace("Σ", ""), 10) : 0;
-            
-            // Pontuação do Banker
-            const spanBankerSum = divOutcome.querySelector(".d-flex:nth-child(2) span");
-            const bankerScore = spanBankerSum ? parseInt(spanBankerSum.textContent.replace("Σ", ""), 10) : 0;
-            
-            // Diferença entre as pontuações
-            const diferenca = Math.abs(playerScore - bankerScore);
-            
-            // Adiciona o resultado ao array de items
-            items.push({
-              player: playerScore,
-              banker: bankerScore,
-              resultado: resultado,
-              diferenca: diferenca,
-              // Adicionamos a hora para verificar se é um resultado novo
-              hora: linha.querySelector(".dateTime_DateTime__time__f0_Bn") ? 
-                linha.querySelector(".dateTime_DateTime__time__f0_Bn").textContent : ""
-            });
-          } catch (rowError) {
-            console.error("Erro ao processar linha da tabela:", rowError.message);
-          }
-        });
-
-        return items;
-      } catch (evalError) {
-        console.error("Erro durante execução no browser:", evalError.message);
+      })
+      .catch((error) => {
+        console.error("Erro ao executar evaluate:", error.message);
         return [];
-      }
-    }).catch((error) => {
-      console.error("Erro ao executar evaluate:", error.message);
-      return [];
-    });
+      });
 
     if (!resultados || resultados.length === 0) {
       console.error("Não foi possível encontrar resultados do Bac Bo.");
@@ -509,7 +597,9 @@ async function getBacBoResultado() {
     }
 
     console.log(`Encontrados ${resultados.length} resultados`);
-    console.log(`Último resultado: Player ${resultados[0].player} - Banker ${resultados[0].banker} (${resultados[0].resultado})`);
+    console.log(
+      `Último resultado: Player ${resultados[0].player} - Banker ${resultados[0].banker} (${resultados[0].resultado})`
+    );
 
     // Pegamos o resultado mais recente (primeiro da lista)
     const ultimoResultado = resultados[0];
@@ -611,7 +701,9 @@ async function getBacBoResultado() {
       err.message.includes("failed to connect") ||
       err.message.includes("connection closed")
     ) {
-      console.error("Erro de conexão com o navegador, reiniciando na próxima execução...");
+      console.error(
+        "Erro de conexão com o navegador, reiniciando na próxima execução..."
+      );
       try {
         if (page) await page.close().catch(() => {});
         if (browser) await browser.close().catch(() => {});
@@ -625,7 +717,10 @@ async function getBacBoResultado() {
     if (err.response) {
       console.error("Resposta do site:", err.response.status);
       if (err.response.data) {
-        console.error("HTML da resposta:", err.response.data.substring(0, 200) + "...");
+        console.error(
+          "HTML da resposta:",
+          err.response.data.substring(0, 200) + "..."
+        );
       }
     }
   }
@@ -635,7 +730,9 @@ async function getBacBoResultado() {
 
 // Processa o resultado para todas as estratégias
 async function processarResultado(res) {
-  console.log(`Processando resultado: ${res.resultado} (Player: ${res.player}, Banker: ${res.banker})`);
+  console.log(
+    `Processando resultado: ${res.resultado} (Player: ${res.player}, Banker: ${res.banker})`
+  );
   contadorRodadas++;
 
   // Incrementa os contadores
@@ -683,9 +780,15 @@ async function processarResultado(res) {
 
   // Log detalhado do estado atual para depuração
   console.log(`--- ESTADO ATUAL ---`);
-  console.log(`Alertas ativos: Sequência: ${estrategiaSequencia.alertaAtivo}, Diferença Pequena: ${estrategiaDiferencaPequena.alertaAtivo}`);
-  console.log(`Alertas ativos: Após Empate: ${estrategiaAposEmpate.alertaAtivo}, Alternância: ${estrategiaAlternancia.alertaAtivo}`);
-  console.log(`Player: ${totalPlayer}, Banker: ${totalBanker}, Tie: ${totalTie}`);
+  console.log(
+    `Alertas ativos: Sequência: ${estrategiaSequencia.alertaAtivo}, Diferença Pequena: ${estrategiaDiferencaPequena.alertaAtivo}`
+  );
+  console.log(
+    `Alertas ativos: Após Empate: ${estrategiaAposEmpate.alertaAtivo}, Alternância: ${estrategiaAlternancia.alertaAtivo}`
+  );
+  console.log(
+    `Player: ${totalPlayer}, Banker: ${totalBanker}, Tie: ${totalTie}`
+  );
   console.log(`Diferença atual: ${res.diferenca}`);
   console.log(`-------------------`);
 
@@ -714,24 +817,40 @@ async function processarEstrategiaSequencia(res) {
   }
 
   // Primeira rodada após detectar padrão (G0)
-  if (estrategiaSequencia.alertaAtivo && estrategiaSequencia.alvoAtual && estrategiaSequencia.rodadaG0 === null) {
-    console.log(`Alerta ativo para sequência, primeira tentativa (G0). Alvo: ${estrategiaSequencia.alvoAtual}`);
+  if (
+    estrategiaSequencia.alertaAtivo &&
+    estrategiaSequencia.alvoAtual &&
+    estrategiaSequencia.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo para sequência, primeira tentativa (G0). Alvo: ${estrategiaSequencia.alvoAtual}`
+    );
 
     if (res.resultado === estrategiaSequencia.alvoAtual) {
       estrategiaSequencia.totalGreens++;
       estrategiaSequencia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaSequencia.vitoriaConsecutiva > estrategiaSequencia.maiorVitoriaConsecutiva) {
-        estrategiaSequencia.maiorVitoriaConsecutiva = estrategiaSequencia.vitoriaConsecutiva;
+      if (
+        estrategiaSequencia.vitoriaConsecutiva >
+        estrategiaSequencia.maiorVitoriaConsecutiva
+      ) {
+        estrategiaSequencia.maiorVitoriaConsecutiva =
+          estrategiaSequencia.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green para estratégia de sequência! [${estrategiaSequencia.vitoriaConsecutiva} VITÓRIA${
+        `🟢 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green para estratégia de sequência! [${
+          estrategiaSequencia.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${estrategiaSequencia.totalReds}`,
+        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+          estrategiaSequencia.totalReds
+        }`,
         "sequencia"
       );
 
@@ -747,14 +866,20 @@ async function processarEstrategiaSequencia(res) {
       resetarAlertaSequencia();
     } else {
       await enviarTelegram(
-        `🔄 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], vamos para o G1 na estratégia de sequência...`,
+        `🔄 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], vamos para o G1 na estratégia de sequência...`,
         "sequencia"
       );
       estrategiaSequencia.rodadaG0 = res;
     }
   }
   // Segunda rodada após detectar padrão (G1)
-  else if (estrategiaSequencia.alertaAtivo && estrategiaSequencia.alvoAtual && estrategiaSequencia.rodadaG0) {
+  else if (
+    estrategiaSequencia.alertaAtivo &&
+    estrategiaSequencia.alvoAtual &&
+    estrategiaSequencia.rodadaG0
+  ) {
     console.log("Processando G1 para estratégia de sequência");
 
     if (res.resultado === estrategiaSequencia.alvoAtual) {
@@ -762,16 +887,26 @@ async function processarEstrategiaSequencia(res) {
       estrategiaSequencia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaSequencia.vitoriaConsecutiva > estrategiaSequencia.maiorVitoriaConsecutiva) {
-        estrategiaSequencia.maiorVitoriaConsecutiva = estrategiaSequencia.vitoriaConsecutiva;
+      if (
+        estrategiaSequencia.vitoriaConsecutiva >
+        estrategiaSequencia.maiorVitoriaConsecutiva
+      ) {
+        estrategiaSequencia.maiorVitoriaConsecutiva =
+          estrategiaSequencia.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green no G1 para estratégia de sequência! [${estrategiaSequencia.vitoriaConsecutiva} VITÓRIA${
+        `🟢 SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green no G1 para estratégia de sequência! [${
+          estrategiaSequencia.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${estrategiaSequencia.totalReds}`,
+        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+          estrategiaSequencia.totalReds
+        }`,
         "sequencia"
       );
 
@@ -790,7 +925,11 @@ async function processarEstrategiaSequencia(res) {
       estrategiaSequencia.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
-        `❌ SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ❌ Red na estratégia de sequência\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${estrategiaSequencia.totalReds}`,
+        `❌ SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ❌ Red na estratégia de sequência\n📊 Sequência: Greens: ${
+          estrategiaSequencia.totalGreens
+        } | Reds: ${estrategiaSequencia.totalReds}`,
         "sequencia"
       );
 
@@ -807,31 +946,49 @@ async function processarEstrategiaSequencia(res) {
     }
   }
   // Análise normal do histórico para detecção de sequências
-  else if (!estrategiaSequencia.alertaAtivo && historico.length >= estrategiaSequencia.sequenciaConsiderada) {
+  else if (
+    !estrategiaSequencia.alertaAtivo &&
+    historico.length >= estrategiaSequencia.sequenciaConsiderada
+  ) {
     // Verificamos os últimos N resultados, ignorando empates
-    const resultadosSemEmpate = historico.filter(item => item.resultado !== "tie");
-    
-    if (resultadosSemEmpate.length >= estrategiaSequencia.sequenciaConsiderada) {
+    const resultadosSemEmpate = historico.filter(
+      (item) => item.resultado !== "tie"
+    );
+
+    if (
+      resultadosSemEmpate.length >= estrategiaSequencia.sequenciaConsiderada
+    ) {
       // Verifica se os resultados são todos iguais
-      const primeirosResultados = resultadosSemEmpate.slice(0, estrategiaSequencia.sequenciaConsiderada);
-      const todosIguais = primeirosResultados.every(item => item.resultado === primeirosResultados[0].resultado);
-      
+      const primeirosResultados = resultadosSemEmpate.slice(
+        0,
+        estrategiaSequencia.sequenciaConsiderada
+      );
+      const todosIguais = primeirosResultados.every(
+        (item) => item.resultado === primeirosResultados[0].resultado
+      );
+
       if (todosIguais) {
         estrategiaSequencia.alertaAtivo = true;
         // Define o alvo como o oposto da sequência detectada
-        estrategiaSequencia.alvoAtual = primeirosResultados[0].resultado === "player" ? "banker" : "player";
-        
+        estrategiaSequencia.alvoAtual =
+          primeirosResultados[0].resultado === "player" ? "banker" : "player";
+
         await enviarTelegram(
-          `⚠️ ESTRATÉGIA DE SEQUÊNCIA: ${estrategiaSequencia.sequenciaConsiderada}x ${primeirosResultados[0].resultado.toUpperCase()} seguidos!\n🎯 Entrada sugerida: ${estrategiaSequencia.alvoAtual.toUpperCase()} na próxima rodada!`,
+          `⚠️ ESTRATÉGIA DE SEQUÊNCIA: ${
+            estrategiaSequencia.sequenciaConsiderada
+          }x ${primeirosResultados[0].resultado.toUpperCase()} seguidos!\n🎯 Entrada sugerida: ${estrategiaSequencia.alvoAtual.toUpperCase()} na próxima rodada!`,
           "sequencia"
         );
-        
-        console.log(`Alerta ativado para sequência! Alvo: ${estrategiaSequencia.alvoAtual}`);
+
+        console.log(
+          `Alerta ativado para sequência! Alvo: ${estrategiaSequencia.alvoAtual}`
+        );
       }
     }
   }
 }
 
+// Estratégia de Padrão para Valores Altos/Baixos
 // Estratégia de Padrão para Valores Altos/Baixos
 async function processarEstrategiaDiferencaPequena(res) {
   // Ignorar empates para esta estratégia
@@ -844,49 +1001,87 @@ async function processarEstrategiaDiferencaPequena(res) {
   const valorPlayerAtual = res.player;
   const valorBankerAtual = res.banker;
   const vencedorAtual = res.resultado;
-  const valorDoVencedor = vencedorAtual === "player" ? valorPlayerAtual : valorBankerAtual;
-  
-  const tipoValorAtual = valorDoVencedor <= estrategiaDiferencaPequena.limiteValorBaixo ? 
-    "baixo" : (valorDoVencedor >= estrategiaDiferencaPequena.limiteValorAlto ? "alto" : "medio");
+  const valorDoVencedor =
+    vencedorAtual === "player" ? valorPlayerAtual : valorBankerAtual;
+
+  // Verificar se os limites estão definidos, caso contrário, usar valores padrão
+  const limiteValorBaixo = estrategiaDiferencaPequena.limiteValorBaixo || 4;
+  const limiteValorAlto = estrategiaDiferencaPequena.limiteValorAlto || 8;
+
+  const tipoValorAtual =
+    valorDoVencedor <= limiteValorBaixo
+      ? "baixo"
+      : valorDoVencedor >= limiteValorAlto
+      ? "alto"
+      : "medio";
 
   // Adiciona o resultado atual à lista
+  if (!estrategiaDiferencaPequena.ultimosResultados) {
+    estrategiaDiferencaPequena.ultimosResultados = [];
+  }
+
   estrategiaDiferencaPequena.ultimosResultados.unshift({
     resultado: res.resultado,
     valor: valorDoVencedor,
-    tipo: tipoValorAtual
+    tipo: tipoValorAtual,
   });
-  
+
   // Mantém apenas os últimos N resultados
-  if (estrategiaDiferencaPequena.ultimosResultados.length > estrategiaDiferencaPequena.qtdConsiderada) {
-    estrategiaDiferencaPequena.ultimosResultados = estrategiaDiferencaPequena.ultimosResultados.slice(
-      0, estrategiaDiferencaPequena.qtdConsiderada
-    );
+  if (
+    estrategiaDiferencaPequena.ultimosResultados.length >
+    estrategiaDiferencaPequena.qtdConsiderada
+  ) {
+    estrategiaDiferencaPequena.ultimosResultados =
+      estrategiaDiferencaPequena.ultimosResultados.slice(
+        0,
+        estrategiaDiferencaPequena.qtdConsiderada
+      );
   }
 
   // Primeira rodada após detectar padrão (G0)
-  if (estrategiaDiferencaPequena.alertaAtivo && estrategiaDiferencaPequena.proximoAlvo && 
-      estrategiaDiferencaPequena.rodadaG0 === null) {
-    console.log(`Alerta ativo para valores ${estrategiaDiferencaPequena.proximoAlvo}, primeira tentativa (G0).`);
+  if (
+    estrategiaDiferencaPequena.alertaAtivo &&
+    estrategiaDiferencaPequena.proximoAlvo &&
+    estrategiaDiferencaPequena.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo para valores ${estrategiaDiferencaPequena.proximoAlvo}, primeira tentativa (G0).`
+    );
 
     // Verificamos se o valor atual corresponde ao alvo esperado
-    const acertou = (estrategiaDiferencaPequena.proximoAlvo === "baixo" && tipoValorAtual === "baixo") ||
-                   (estrategiaDiferencaPequena.proximoAlvo === "alto" && tipoValorAtual === "alto");
+    const acertou =
+      (estrategiaDiferencaPequena.proximoAlvo === "baixo" &&
+        tipoValorAtual === "baixo") ||
+      (estrategiaDiferencaPequena.proximoAlvo === "alto" &&
+        tipoValorAtual === "alto");
 
     if (acertou) {
       estrategiaDiferencaPequena.totalGreens++;
       estrategiaDiferencaPequena.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaDiferencaPequena.vitoriaConsecutiva > estrategiaDiferencaPequena.maiorVitoriaConsecutiva) {
-        estrategiaDiferencaPequena.maiorVitoriaConsecutiva = estrategiaDiferencaPequena.vitoriaConsecutiva;
+      if (
+        estrategiaDiferencaPequena.vitoriaConsecutiva >
+        estrategiaDiferencaPequena.maiorVitoriaConsecutiva
+      ) {
+        estrategiaDiferencaPequena.maiorVitoriaConsecutiva =
+          estrategiaDiferencaPequena.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green! O valor ${valorDoVencedor} é ${tipoValorAtual} como esperado [${estrategiaDiferencaPequena.vitoriaConsecutiva} VITÓRIA${
+        `🟢 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ✅ Green! O valor ${valorDoVencedor} é ${tipoValorAtual} como esperado [${
+          estrategiaDiferencaPequena.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaDiferencaPequena.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaDiferencaPequena.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Valores: Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${estrategiaDiferencaPequena.totalReds}`,
+        }]\n📊 Valores: Greens: ${
+          estrategiaDiferencaPequena.totalGreens
+        } | Reds: ${estrategiaDiferencaPequena.totalReds}`,
         "diferenca"
       );
 
@@ -902,36 +1097,60 @@ async function processarEstrategiaDiferencaPequena(res) {
       resetarAlertaDiferencaPequena();
     } else {
       await enviarTelegram(
-        `🔄 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], vamos para o G1... O valor ${valorDoVencedor} é ${tipoValorAtual}, esperávamos ${estrategiaDiferencaPequena.proximoAlvo}`,
+        `🔄 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], vamos para o G1... O valor ${valorDoVencedor} é ${tipoValorAtual}, esperávamos ${
+          estrategiaDiferencaPequena.proximoAlvo
+        }`,
         "diferenca"
       );
       estrategiaDiferencaPequena.rodadaG0 = res;
     }
   }
   // Segunda rodada após detectar padrão (G1)
-  else if (estrategiaDiferencaPequena.alertaAtivo && estrategiaDiferencaPequena.proximoAlvo && 
-          estrategiaDiferencaPequena.rodadaG0) {
+  else if (
+    estrategiaDiferencaPequena.alertaAtivo &&
+    estrategiaDiferencaPequena.proximoAlvo &&
+    estrategiaDiferencaPequena.rodadaG0
+  ) {
     console.log("Processando G1 para estratégia de valores altos/baixos");
 
     // Verificamos se o valor atual corresponde ao alvo esperado
-    const acertou = (estrategiaDiferencaPequena.proximoAlvo === "baixo" && tipoValorAtual === "baixo") ||
-                   (estrategiaDiferencaPequena.proximoAlvo === "alto" && tipoValorAtual === "alto");
+    const acertou =
+      (estrategiaDiferencaPequena.proximoAlvo === "baixo" &&
+        tipoValorAtual === "baixo") ||
+      (estrategiaDiferencaPequena.proximoAlvo === "alto" &&
+        tipoValorAtual === "alto");
 
     if (acertou) {
       estrategiaDiferencaPequena.totalGreens++;
       estrategiaDiferencaPequena.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaDiferencaPequena.vitoriaConsecutiva > estrategiaDiferencaPequena.maiorVitoriaConsecutiva) {
-        estrategiaDiferencaPequena.maiorVitoriaConsecutiva = estrategiaDiferencaPequena.vitoriaConsecutiva;
+      if (
+        estrategiaDiferencaPequena.vitoriaConsecutiva >
+        estrategiaDiferencaPequena.maiorVitoriaConsecutiva
+      ) {
+        estrategiaDiferencaPequena.maiorVitoriaConsecutiva =
+          estrategiaDiferencaPequena.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green no G1! O valor ${valorDoVencedor} é ${tipoValorAtual} como esperado [${estrategiaDiferencaPequena.vitoriaConsecutiva} VITÓRIA${
+        `🟢 VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ✅ Green no G1! O valor ${valorDoVencedor} é ${tipoValorAtual} como esperado [${
+          estrategiaDiferencaPequena.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaDiferencaPequena.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaDiferencaPequena.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Valores: Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${estrategiaDiferencaPequena.totalReds}`,
+        }]\n📊 Valores: Greens: ${
+          estrategiaDiferencaPequena.totalGreens
+        } | Reds: ${estrategiaDiferencaPequena.totalReds}`,
         "diferenca"
       );
 
@@ -950,7 +1169,15 @@ async function processarEstrategiaDiferencaPequena(res) {
       estrategiaDiferencaPequena.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
-        `❌ VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ❌ Red! O valor ${valorDoVencedor} é ${tipoValorAtual}, esperávamos ${estrategiaDiferencaPequena.proximoAlvo}\n📊 Valores: Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${estrategiaDiferencaPequena.totalReds}`,
+        `❌ VALORES ${estrategiaDiferencaPequena.proximoAlvo.toUpperCase()}: ${res.resultado.toUpperCase()} [${
+          res.player
+        }-${
+          res.banker
+        }], ❌ Red! O valor ${valorDoVencedor} é ${tipoValorAtual}, esperávamos ${
+          estrategiaDiferencaPequena.proximoAlvo
+        }\n📊 Valores: Greens: ${
+          estrategiaDiferencaPequena.totalGreens
+        } | Reds: ${estrategiaDiferencaPequena.totalReds}`,
         "diferenca"
       );
 
@@ -968,30 +1195,38 @@ async function processarEstrategiaDiferencaPequena(res) {
   }
   // Análise normal do histórico para detecção de padrões de valores
   else if (
-    !estrategiaDiferencaPequena.alertaAtivo && 
-    estrategiaDiferencaPequena.ultimosResultados.length >= estrategiaDiferencaPequena.qtdConsiderada
+    !estrategiaDiferencaPequena.alertaAtivo &&
+    estrategiaDiferencaPequena.ultimosResultados.length >=
+      estrategiaDiferencaPequena.qtdConsiderada
   ) {
     // Verificar se temos uma sequência de valores do mesmo tipo (altos ou baixos)
     const contagem = { baixo: 0, medio: 0, alto: 0 };
-    
-    estrategiaDiferencaPequena.ultimosResultados.forEach(r => {
+
+    estrategiaDiferencaPequena.ultimosResultados.forEach((r) => {
       contagem[r.tipo]++;
     });
-    
+
     // Se temos predominância de valores baixos ou altos (pelo menos 3 em 4)
-    const valorPredominante = contagem.baixo >= 3 ? "baixo" : (contagem.alto >= 3 ? "alto" : null);
-    
+    const valorPredominante =
+      contagem.baixo >= 3 ? "baixo" : contagem.alto >= 3 ? "alto" : null;
+
     if (valorPredominante) {
       // O padrão sugere que o próximo valor será o oposto do predominante
       estrategiaDiferencaPequena.alertaAtivo = true;
-      estrategiaDiferencaPequena.proximoAlvo = valorPredominante === "baixo" ? "alto" : "baixo";
-      
+      estrategiaDiferencaPequena.proximoAlvo =
+        valorPredominante === "baixo" ? "alto" : "baixo";
+      // Para compatibilidade com código existente
+      estrategiaDiferencaPequena.alvoProximaRodada =
+        estrategiaDiferencaPequena.proximoAlvo;
+
       await enviarTelegram(
         `⚠️ ESTRATÉGIA DE VALORES: Detectados ${contagem[valorPredominante]} valores ${valorPredominante}s nos últimos ${estrategiaDiferencaPequena.qtdConsiderada} resultados!\n🎯 Entrada sugerida: Apostar em valores ${estrategiaDiferencaPequena.proximoAlvo}s na próxima rodada!`,
         "diferenca"
       );
-      
-      console.log(`Alerta ativado para valores! Próximo valor esperado: ${estrategiaDiferencaPequena.proximoAlvo}`);
+
+      console.log(
+        `Alerta ativado para valores! Próximo valor esperado: ${estrategiaDiferencaPequena.proximoAlvo}`
+      );
     }
   }
 }
@@ -999,24 +1234,40 @@ async function processarEstrategiaDiferencaPequena(res) {
 // Estratégia Após Empate
 async function processarEstrategiaAposEmpate(res) {
   // Primeira rodada após detectar empate (G0)
-  if (estrategiaAposEmpate.alertaAtivo && estrategiaAposEmpate.alvoAposEmpate && estrategiaAposEmpate.rodadaG0 === null) {
-    console.log(`Alerta ativo após empate, primeira tentativa (G0). Alvo: ${estrategiaAposEmpate.alvoAposEmpate}`);
+  if (
+    estrategiaAposEmpate.alertaAtivo &&
+    estrategiaAposEmpate.alvoAposEmpate &&
+    estrategiaAposEmpate.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo após empate, primeira tentativa (G0). Alvo: ${estrategiaAposEmpate.alvoAposEmpate}`
+    );
 
     if (res.resultado === estrategiaAposEmpate.alvoAposEmpate) {
       estrategiaAposEmpate.totalGreens++;
       estrategiaAposEmpate.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaAposEmpate.vitoriaConsecutiva > estrategiaAposEmpate.maiorVitoriaConsecutiva) {
-        estrategiaAposEmpate.maiorVitoriaConsecutiva = estrategiaAposEmpate.vitoriaConsecutiva;
+      if (
+        estrategiaAposEmpate.vitoriaConsecutiva >
+        estrategiaAposEmpate.maiorVitoriaConsecutiva
+      ) {
+        estrategiaAposEmpate.maiorVitoriaConsecutiva =
+          estrategiaAposEmpate.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green para estratégia após empate! [${estrategiaAposEmpate.vitoriaConsecutiva} VITÓRIA${
+        `🟢 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green para estratégia após empate! [${
+          estrategiaAposEmpate.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${estrategiaAposEmpate.totalReds}`,
+        }]\n📊 Após Empate: Greens: ${
+          estrategiaAposEmpate.totalGreens
+        } | Reds: ${estrategiaAposEmpate.totalReds}`,
         "aposEmpate"
       );
 
@@ -1038,14 +1289,20 @@ async function processarEstrategiaAposEmpate(res) {
       // Mantém o alerta ativo mas não considera como vitória ou derrota
     } else {
       await enviarTelegram(
-        `🔄 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], vamos para o G1 na estratégia após empate...`,
+        `🔄 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], vamos para o G1 na estratégia após empate...`,
         "aposEmpate"
       );
       estrategiaAposEmpate.rodadaG0 = res;
     }
   }
   // Segunda rodada após detectar empate (G1)
-  else if (estrategiaAposEmpate.alertaAtivo && estrategiaAposEmpate.alvoAposEmpate && estrategiaAposEmpate.rodadaG0) {
+  else if (
+    estrategiaAposEmpate.alertaAtivo &&
+    estrategiaAposEmpate.alvoAposEmpate &&
+    estrategiaAposEmpate.rodadaG0
+  ) {
     console.log("Processando G1 para estratégia após empate");
 
     if (res.resultado === estrategiaAposEmpate.alvoAposEmpate) {
@@ -1053,16 +1310,26 @@ async function processarEstrategiaAposEmpate(res) {
       estrategiaAposEmpate.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaAposEmpate.vitoriaConsecutiva > estrategiaAposEmpate.maiorVitoriaConsecutiva) {
-        estrategiaAposEmpate.maiorVitoriaConsecutiva = estrategiaAposEmpate.vitoriaConsecutiva;
+      if (
+        estrategiaAposEmpate.vitoriaConsecutiva >
+        estrategiaAposEmpate.maiorVitoriaConsecutiva
+      ) {
+        estrategiaAposEmpate.maiorVitoriaConsecutiva =
+          estrategiaAposEmpate.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green no G1 para estratégia após empate! [${estrategiaAposEmpate.vitoriaConsecutiva} VITÓRIA${
+        `🟢 APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green no G1 para estratégia após empate! [${
+          estrategiaAposEmpate.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${estrategiaAposEmpate.totalReds}`,
+        }]\n📊 Após Empate: Greens: ${
+          estrategiaAposEmpate.totalGreens
+        } | Reds: ${estrategiaAposEmpate.totalReds}`,
         "aposEmpate"
       );
 
@@ -1087,7 +1354,11 @@ async function processarEstrategiaAposEmpate(res) {
       estrategiaAposEmpate.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
-        `❌ APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ❌ Red na estratégia após empate\n📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${estrategiaAposEmpate.totalReds}`,
+        `❌ APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ❌ Red na estratégia após empate\n📊 Após Empate: Greens: ${
+          estrategiaAposEmpate.totalGreens
+        } | Reds: ${estrategiaAposEmpate.totalReds}`,
         "aposEmpate"
       );
 
@@ -1108,12 +1379,12 @@ async function processarEstrategiaAposEmpate(res) {
     // Se o resultado atual é um empate, ativamos o alerta
     if (res.resultado === "tie") {
       estrategiaAposEmpate.alertaAtivo = true;
-      
+
       // Analisar o histórico para determinar o alvo após o empate
       // Estratégia: apostar no lado que tinha maior contagem antes do empate
       let contPlayer = 0;
       let contBanker = 0;
-      
+
       // Olha os últimos 5 resultados antes do empate para definir o alvo
       for (let i = 1; i < Math.min(6, historico.length); i++) {
         if (historico[i]?.resultado === "player") {
@@ -1123,20 +1394,24 @@ async function processarEstrategiaAposEmpate(res) {
         }
         // Ignoramos empates anteriores
       }
-      
+
       // Define o alvo como o lado que apareceu mais vezes antes do empate
       if (contPlayer >= contBanker) {
         estrategiaAposEmpate.alvoAposEmpate = "player";
       } else {
         estrategiaAposEmpate.alvoAposEmpate = "banker";
       }
-      
+
       await enviarTelegram(
-        `⚠️ ESTRATÉGIA APÓS EMPATE: Empate [${res.player}-${res.banker}] detectado!\n🎯 Entrada sugerida: ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()} na próxima rodada!`,
+        `⚠️ ESTRATÉGIA APÓS EMPATE: Empate [${res.player}-${
+          res.banker
+        }] detectado!\n🎯 Entrada sugerida: ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()} na próxima rodada!`,
         "aposEmpate"
       );
-      
-      console.log(`Alerta ativado após empate! Alvo: ${estrategiaAposEmpate.alvoAposEmpate}`);
+
+      console.log(
+        `Alerta ativado após empate! Alvo: ${estrategiaAposEmpate.alvoAposEmpate}`
+      );
     }
   }
 }
@@ -1150,24 +1425,40 @@ async function processarEstrategiaAlternancia(res) {
   }
 
   // Primeira rodada após detectar padrão (G0)
-  if (estrategiaAlternancia.alertaAtivo && estrategiaAlternancia.proximoResultadoEsperado && estrategiaAlternancia.rodadaG0 === null) {
-    console.log(`Alerta ativo para alternância, primeira tentativa (G0). Próximo esperado: ${estrategiaAlternancia.proximoResultadoEsperado}`);
+  if (
+    estrategiaAlternancia.alertaAtivo &&
+    estrategiaAlternancia.proximoResultadoEsperado &&
+    estrategiaAlternancia.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo para alternância, primeira tentativa (G0). Próximo esperado: ${estrategiaAlternancia.proximoResultadoEsperado}`
+    );
 
     if (res.resultado === estrategiaAlternancia.proximoResultadoEsperado) {
       estrategiaAlternancia.totalGreens++;
       estrategiaAlternancia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaAlternancia.vitoriaConsecutiva > estrategiaAlternancia.maiorVitoriaConsecutiva) {
-        estrategiaAlternancia.maiorVitoriaConsecutiva = estrategiaAlternancia.vitoriaConsecutiva;
+      if (
+        estrategiaAlternancia.vitoriaConsecutiva >
+        estrategiaAlternancia.maiorVitoriaConsecutiva
+      ) {
+        estrategiaAlternancia.maiorVitoriaConsecutiva =
+          estrategiaAlternancia.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green para estratégia de alternância! [${estrategiaAlternancia.vitoriaConsecutiva} VITÓRIA${
+        `🟢 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green para estratégia de alternância! [${
+          estrategiaAlternancia.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${estrategiaAlternancia.totalReds}`,
+        }]\n📊 Alternância: Greens: ${
+          estrategiaAlternancia.totalGreens
+        } | Reds: ${estrategiaAlternancia.totalReds}`,
         "alternancia"
       );
 
@@ -1183,34 +1474,53 @@ async function processarEstrategiaAlternancia(res) {
       resetarAlertaAlternancia();
     } else {
       await enviarTelegram(
-        `🔄 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], vamos para o G1 na estratégia de alternância...`,
+        `🔄 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], vamos para o G1 na estratégia de alternância...`,
         "alternancia"
       );
       estrategiaAlternancia.rodadaG0 = res;
     }
   }
   // Segunda rodada após detectar padrão (G1)
-  else if (estrategiaAlternancia.alertaAtivo && estrategiaAlternancia.proximoResultadoEsperado && estrategiaAlternancia.rodadaG0) {
+  else if (
+    estrategiaAlternancia.alertaAtivo &&
+    estrategiaAlternancia.proximoResultadoEsperado &&
+    estrategiaAlternancia.rodadaG0
+  ) {
     console.log("Processando G1 para estratégia de alternância");
 
     // No G1, apostamos no oposto do último resultado
-    const proximoEsperadoG1 = estrategiaAlternancia.rodadaG0.resultado === "player" ? "banker" : "player";
+    const proximoEsperadoG1 =
+      estrategiaAlternancia.rodadaG0.resultado === "player"
+        ? "banker"
+        : "player";
 
     if (res.resultado === proximoEsperadoG1) {
       estrategiaAlternancia.totalGreens++;
       estrategiaAlternancia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
-      if (estrategiaAlternancia.vitoriaConsecutiva > estrategiaAlternancia.maiorVitoriaConsecutiva) {
-        estrategiaAlternancia.maiorVitoriaConsecutiva = estrategiaAlternancia.vitoriaConsecutiva;
+      if (
+        estrategiaAlternancia.vitoriaConsecutiva >
+        estrategiaAlternancia.maiorVitoriaConsecutiva
+      ) {
+        estrategiaAlternancia.maiorVitoriaConsecutiva =
+          estrategiaAlternancia.vitoriaConsecutiva;
       }
 
       await enviarTelegram(
-        `🟢 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ✅ Green no G1 para estratégia de alternância! [${estrategiaAlternancia.vitoriaConsecutiva} VITÓRIA${
+        `🟢 ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green no G1 para estratégia de alternância! [${
+          estrategiaAlternancia.vitoriaConsecutiva
+        } VITÓRIA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
         } CONSECUTIVA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${estrategiaAlternancia.totalReds}`,
+        }]\n📊 Alternância: Greens: ${
+          estrategiaAlternancia.totalGreens
+        } | Reds: ${estrategiaAlternancia.totalReds}`,
         "alternancia"
       );
 
@@ -1229,7 +1539,11 @@ async function processarEstrategiaAlternancia(res) {
       estrategiaAlternancia.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
-        `❌ ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${res.banker}], ❌ Red na estratégia de alternância\n📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${estrategiaAlternancia.totalReds}`,
+        `❌ ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ❌ Red na estratégia de alternância\n📊 Alternância: Greens: ${
+          estrategiaAlternancia.totalGreens
+        } | Reds: ${estrategiaAlternancia.totalReds}`,
         "alternancia"
       );
 
@@ -1248,38 +1562,44 @@ async function processarEstrategiaAlternancia(res) {
   // Análise normal do histórico para detecção de alternância
   else if (!estrategiaAlternancia.alertaAtivo && historico.length >= 4) {
     // Filtra apenas resultados Player e Banker (sem empates)
-    const resultadosFiltrados = historico.filter(item => item.resultado !== "tie").slice(0, 4);
-    
+    const resultadosFiltrados = historico
+      .filter((item) => item.resultado !== "tie")
+      .slice(0, 4);
+
     if (resultadosFiltrados.length >= 4) {
       // Verifica se há um padrão de alternância (PBPB ou BPBP)
-      const ehAlternancia = 
+      const ehAlternancia =
         resultadosFiltrados[0].resultado !== resultadosFiltrados[1].resultado &&
         resultadosFiltrados[1].resultado !== resultadosFiltrados[2].resultado &&
         resultadosFiltrados[2].resultado !== resultadosFiltrados[3].resultado &&
         resultadosFiltrados[0].resultado === resultadosFiltrados[2].resultado &&
         resultadosFiltrados[1].resultado === resultadosFiltrados[3].resultado;
-      
+
       if (ehAlternancia) {
         estrategiaAlternancia.alertaAtivo = true;
         estrategiaAlternancia.padrao = [
           resultadosFiltrados[3].resultado,
           resultadosFiltrados[2].resultado,
           resultadosFiltrados[1].resultado,
-          resultadosFiltrados[0].resultado
+          resultadosFiltrados[0].resultado,
         ];
-        
+
         // O próximo esperado deve ser igual ao último detectado
-        estrategiaAlternancia.proximoResultadoEsperado = 
+        estrategiaAlternancia.proximoResultadoEsperado =
           resultadosFiltrados[0].resultado === "player" ? "banker" : "player";
-        
+
         await enviarTelegram(
           `⚠️ ESTRATÉGIA DE ALTERNÂNCIA: Padrão de alternância detectado!
-🔄 Últimos resultados: ${resultadosFiltrados.map(r => r.resultado.toUpperCase().charAt(0)).join("")}
+🔄 Últimos resultados: ${resultadosFiltrados
+            .map((r) => r.resultado.toUpperCase().charAt(0))
+            .join("")}
 🎯 Entrada sugerida: ${estrategiaAlternancia.proximoResultadoEsperado.toUpperCase()} na próxima rodada!`,
           "alternancia"
         );
-        
-        console.log(`Alerta ativado para alternância! Próximo esperado: ${estrategiaAlternancia.proximoResultadoEsperado}`);
+
+        console.log(
+          `Alerta ativado para alternância! Próximo esperado: ${estrategiaAlternancia.proximoResultadoEsperado}`
+        );
       }
     }
   }
@@ -1297,11 +1617,18 @@ function resetarAlertaSequencia() {
 function resetarAlertaDiferencaPequena() {
   console.log("Resetando alerta de padrão");
   estrategiaDiferencaPequena.alertaAtivo = false;
+  estrategiaDiferencaPequena.proximoAlvo = null;
+  estrategiaDiferencaPequena.alvoProximaRodada = null;
   estrategiaDiferencaPequena.rodadaG0 = null;
+
   // Não limpamos todos os resultados para manter histórico parcial
   // Mantemos os últimos 2 para continuar análise
-  if (estrategiaDiferencaPequena.ultimosResultados.length > 2) {
-    estrategiaDiferencaPequena.ultimosResultados = estrategiaDiferencaPequena.ultimosResultados.slice(0, 2);
+  if (
+    estrategiaDiferencaPequena.ultimosResultados &&
+    estrategiaDiferencaPequena.ultimosResultados.length > 2
+  ) {
+    estrategiaDiferencaPequena.ultimosResultados =
+      estrategiaDiferencaPequena.ultimosResultados.slice(0, 2);
   }
 }
 
@@ -1334,23 +1661,20 @@ async function enviarTelegram(mensagem, estrategia = "geral") {
         chatId = TELEGRAM_CHAT_ID_SEQUENCIA;
         break;
       case "diferenca":
+      case "diferencas": // Use o mesmo token para ambos os casos
         token = TELEGRAM_TOKEN_DIFERENCA;
         chatId = TELEGRAM_CHAT_ID_DIFERENCA;
-        break;
-      case "diferencas":
-        token = TELEGRAM_TOKEN_DIFERENCAS;
-        chatId = TELEGRAM_CHAT_ID_DIFERENCAS;
         break;
       case "aposEmpate":
         token = TELEGRAM_TOKEN_APOS_EMPATE;
         chatId = TELEGRAM_CHAT_ID_APOS_EMPATE;
         break;
       case "alternancia":
-        token = TELEGRAM_TOKEN_ALTERNANCIA;
-        chatId = TELEGRAM_CHAT_ID_ALTERNANCIA;
+        // Use o token principal como fallback
+        token = TELEGRAM_TOKEN;
+        chatId = TELEGRAM_CHAT_ID;
         break;
       default:
-        // Para relatórios e resultados gerais
         token = TELEGRAM_TOKEN;
         chatId = TELEGRAM_CHAT_ID;
     }
@@ -1371,7 +1695,10 @@ async function enviarTelegram(mensagem, estrategia = "geral") {
     console.log(`Mensagem enviada com sucesso para grupo de ${estrategia}`);
     return response;
   } catch (err) {
-    console.error(`Erro ao enviar mensagem para o Telegram (${estrategia}):`, err.message);
+    console.error(
+      `Erro ao enviar mensagem para o Telegram (${estrategia}):`,
+      err.message
+    );
     if (err.response) {
       console.error("Resposta do Telegram:", err.response.data);
     }
@@ -1397,24 +1724,38 @@ async function enviarTelegram(mensagem, estrategia = "geral") {
 async function enviarResumo() {
   // Resumo geral para o grupo principal
   await enviarTelegram(`📊 RESUMO PARCIAL (últimas ${contadorRodadas} rodadas):
-✅ PLAYER: ${totalPlayer} (${Math.round(totalPlayer/contadorRodadas*100)}%)
-✅ BANKER: ${totalBanker} (${Math.round(totalBanker/contadorRodadas*100)}%)
-✅ TIE: ${totalTie} (${Math.round(totalTie/contadorRodadas*100)}%)
+✅ PLAYER: ${totalPlayer} (${Math.round(
+    (totalPlayer / contadorRodadas) * 100
+  )}%)
+✅ BANKER: ${totalBanker} (${Math.round(
+    (totalBanker / contadorRodadas) * 100
+  )}%)
+✅ TIE: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)
 
 🎲 ESTATÍSTICAS DE SEQUÊNCIA:
-Greens: ${estrategiaSequencia.totalGreens} | Reds: ${estrategiaSequencia.totalReds}
+Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+    estrategiaSequencia.totalReds
+  }
 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
 
 🎲 ESTATÍSTICAS DE DIFERENÇA PEQUENA:
-Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${estrategiaDiferencaPequena.totalReds}
-Maior sequência de vitórias: ${estrategiaDiferencaPequena.maiorVitoriaConsecutiva}
+Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${
+    estrategiaDiferencaPequena.totalReds
+  }
+Maior sequência de vitórias: ${
+    estrategiaDiferencaPequena.maiorVitoriaConsecutiva
+  }
 
 🎲 ESTATÍSTICAS APÓS EMPATE:
-Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${estrategiaAposEmpate.totalReds}
+Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${
+    estrategiaAposEmpate.totalReds
+  }
 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
 
 🎲 ESTATÍSTICAS DE ALTERNÂNCIA:
-Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${estrategiaAlternancia.totalReds}
+Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${
+    estrategiaAlternancia.totalReds
+  }
 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
 
 🎯 Maior pontuação Player: ${maiorPontuacaoPlayer}
@@ -1426,7 +1767,9 @@ Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
   // Resumo específico para o grupo de Sequência
   await enviarTelegram(
     `📊 RESUMO PARCIAL - SEQUÊNCIA (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaSequencia.totalGreens} | Reds: ${estrategiaSequencia.totalReds}
+✅ Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+      estrategiaSequencia.totalReds
+    }
 🔄 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
 ${
   estrategiaSequencia.vitoriaConsecutiva > 0
@@ -1440,11 +1783,15 @@ ${
     "sequencia"
   );
 
-    // Envia resumo específico para o grupo de Padrão (antiga Diferença Pequena)
-    await enviarTelegram(
-      `📊 RESUMO PARCIAL - PADRÃO (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${estrategiaDiferencaPequena.totalReds}
-🔄 Maior sequência de vitórias: ${estrategiaDiferencaPequena.maiorVitoriaConsecutiva}
+  // Envia resumo específico para o grupo de Padrão (antiga Diferença Pequena)
+  await enviarTelegram(
+    `📊 RESUMO PARCIAL - PADRÃO (últimas ${contadorRodadas} rodadas):
+✅ Greens: ${estrategiaDiferencaPequena.totalGreens} | Reds: ${
+      estrategiaDiferencaPequena.totalReds
+    }
+🔄 Maior sequência de vitórias: ${
+      estrategiaDiferencaPequena.maiorVitoriaConsecutiva
+    }
 ${
   estrategiaDiferencaPequena.vitoriaConsecutiva > 0
     ? "🔥 Sequência atual: " +
@@ -1452,14 +1799,18 @@ ${
       " vitória(s) consecutiva(s)"
     : ""
 }
-📊 Player: ${Math.round(totalPlayer/contadorRodadas*100)}% | Banker: ${Math.round(totalBanker/contadorRodadas*100)}%`,
-      "diferenca"
-    );
+📊 Player: ${Math.round(
+      (totalPlayer / contadorRodadas) * 100
+    )}% | Banker: ${Math.round((totalBanker / contadorRodadas) * 100)}%`,
+    "diferenca"
+  );
 
   // Resumo específico para o grupo de Após Empate
   await enviarTelegram(
     `📊 RESUMO PARCIAL - APÓS EMPATE (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${estrategiaAposEmpate.totalReds}
+✅ Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${
+      estrategiaAposEmpate.totalReds
+    }
 🔄 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
 ${
   estrategiaAposEmpate.vitoriaConsecutiva > 0
@@ -1468,7 +1819,9 @@ ${
       " vitória(s) consecutiva(s)"
     : ""
 }
-🎲 Total de Ties: ${totalTie} (${Math.round(totalTie/contadorRodadas*100)}%)
+🎲 Total de Ties: ${totalTie} (${Math.round(
+      (totalTie / contadorRodadas) * 100
+    )}%)
 🔢 Maior sequência Tie: ${maiorSequenciaTie}`,
     "aposEmpate"
   );
@@ -1476,7 +1829,9 @@ ${
   // Resumo específico para o grupo de Alternância
   await enviarTelegram(
     `📊 RESUMO PARCIAL - ALTERNÂNCIA (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${estrategiaAlternancia.totalReds}
+✅ Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${
+      estrategiaAlternancia.totalReds
+    }
 🔄 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
 ${
   estrategiaAlternancia.vitoriaConsecutiva > 0
@@ -1485,8 +1840,12 @@ ${
       " vitória(s) consecutiva(s)"
     : ""
 }
-✅ PLAYER: ${totalPlayer} (${Math.round(totalPlayer/contadorRodadas*100)}%)
-✅ BANKER: ${totalBanker} (${Math.round(totalBanker/contadorRodadas*100)}%)`,
+✅ PLAYER: ${totalPlayer} (${Math.round(
+      (totalPlayer / contadorRodadas) * 100
+    )}%)
+✅ BANKER: ${totalBanker} (${Math.round(
+      (totalBanker / contadorRodadas) * 100
+    )}%)`,
     "alternancia"
   );
 }
@@ -1497,13 +1856,19 @@ async function enviarRelatorioDetalhado() {
   await enviarTelegram(`🔍 RELATÓRIO DETALHADO (RODADA #${contadorRodadas})
 
 🎲 ESTATÍSTICAS GERAIS:
-✅ PLAYER: ${totalPlayer} (${Math.round(totalPlayer/contadorRodadas*100)}%)
-✅ BANKER: ${totalBanker} (${Math.round(totalBanker/contadorRodadas*100)}%)
-✅ TIE: ${totalTie} (${Math.round(totalTie/contadorRodadas*100)}%)
+✅ PLAYER: ${totalPlayer} (${Math.round(
+    (totalPlayer / contadorRodadas) * 100
+  )}%)
+✅ BANKER: ${totalBanker} (${Math.round(
+    (totalBanker / contadorRodadas) * 100
+  )}%)
+✅ TIE: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)
 
 🎲 ESTRATÉGIA DE SEQUÊNCIA:
 ✅ Greens: ${estrategiaSequencia.totalGreens} (${Math.round(
-    (estrategiaSequencia.totalGreens / (estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds || 1)) * 100
+    (estrategiaSequencia.totalGreens /
+      (estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds || 1)) *
+      100
   )}% de aproveitamento)
 ❌ Reds: ${estrategiaSequencia.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
@@ -1517,10 +1882,15 @@ ${
 
 🎲 ESTRATÉGIA DE DIFERENÇA PEQUENA:
 ✅ Greens: ${estrategiaDiferencaPequena.totalGreens} (${Math.round(
-    (estrategiaDiferencaPequena.totalGreens / (estrategiaDiferencaPequena.totalGreens + estrategiaDiferencaPequena.totalReds || 1)) * 100
+    (estrategiaDiferencaPequena.totalGreens /
+      (estrategiaDiferencaPequena.totalGreens +
+        estrategiaDiferencaPequena.totalReds || 1)) *
+      100
   )}% de aproveitamento)
 ❌ Reds: ${estrategiaDiferencaPequena.totalReds}
-🔄 Maior sequência de vitórias: ${estrategiaDiferencaPequena.maiorVitoriaConsecutiva}
+🔄 Maior sequência de vitórias: ${
+    estrategiaDiferencaPequena.maiorVitoriaConsecutiva
+  }
 ${
   estrategiaDiferencaPequena.vitoriaConsecutiva > 0
     ? "🔥 Sequência atual: " +
@@ -1531,7 +1901,10 @@ ${
 
 🎲 ESTRATÉGIA APÓS EMPATE:
 ✅ Greens: ${estrategiaAposEmpate.totalGreens} (${Math.round(
-    (estrategiaAposEmpate.totalGreens / (estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds || 1)) * 100
+    (estrategiaAposEmpate.totalGreens /
+      (estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds ||
+        1)) *
+      100
   )}% de aproveitamento)
 ❌ Reds: ${estrategiaAposEmpate.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
@@ -1545,7 +1918,10 @@ ${
 
 🎲 ESTRATÉGIA DE ALTERNÂNCIA:
 ✅ Greens: ${estrategiaAlternancia.totalGreens} (${Math.round(
-    (estrategiaAlternancia.totalGreens / (estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds || 1)) * 100
+    (estrategiaAlternancia.totalGreens /
+      (estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds ||
+        1)) *
+      100
   )}% de aproveitamento)
 ❌ Reds: ${estrategiaAlternancia.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
@@ -1584,22 +1960,37 @@ async function enviarRelatorioDiarioEReiniciar() {
   await enviarTelegram(`📅 RELATÓRIO FINAL DO DIA - ${dataFormatada}
 
 🎲 RESUMO DAS ÚLTIMAS 24 HORAS:
-✅ PLAYER: ${totalPlayer} (${Math.round(totalPlayer/contadorRodadas*100)}%)
-✅ BANKER: ${totalBanker} (${Math.round(totalBanker/contadorRodadas*100)}%)
-✅ TIE: ${totalTie} (${Math.round(totalTie/contadorRodadas*100)}%)
+✅ PLAYER: ${totalPlayer} (${Math.round(
+    (totalPlayer / contadorRodadas) * 100
+  )}%)
+✅ BANKER: ${totalBanker} (${Math.round(
+    (totalBanker / contadorRodadas) * 100
+  )}%)
+✅ TIE: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)
 
 💯 TAXA DE APROVEITAMENTO DAS ESTRATÉGIAS:
 🎯 Sequência: ${Math.round(
-    (estrategiaSequencia.totalGreens / (estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds || 1)) * 100
+    (estrategiaSequencia.totalGreens /
+      (estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds || 1)) *
+      100
   )}%
 🎯 Diferença Pequena: ${Math.round(
-    (estrategiaDiferencaPequena.totalGreens / (estrategiaDiferencaPequena.totalGreens + estrategiaDiferencaPequena.totalReds || 1)) * 100
+    (estrategiaDiferencaPequena.totalGreens /
+      (estrategiaDiferencaPequena.totalGreens +
+        estrategiaDiferencaPequena.totalReds || 1)) *
+      100
   )}%
 🎯 Após Empate: ${Math.round(
-    (estrategiaAposEmpate.totalGreens / (estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds || 1)) * 100
+    (estrategiaAposEmpate.totalGreens /
+      (estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds ||
+        1)) *
+      100
   )}%
 🎯 Alternância: ${Math.round(
-    (estrategiaAlternancia.totalGreens / (estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds || 1)) * 100
+    (estrategiaAlternancia.totalGreens /
+      (estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds ||
+        1)) *
+      100
   )}%
 
 🎯 Maior pontuação Player: ${maiorPontuacaoPlayer}
@@ -1617,25 +2008,25 @@ async function enviarRelatorioDiarioEReiniciar() {
   totalPlayer = 0;
   totalBanker = 0;
   totalTie = 0;
-  
+
   estrategiaSequencia.totalGreens = 0;
   estrategiaSequencia.totalReds = 0;
   estrategiaSequencia.vitoriaConsecutiva = 0;
-  
+
   estrategiaDiferencaPequena.totalGreens = 0;
   estrategiaDiferencaPequena.totalReds = 0;
   estrategiaDiferencaPequena.vitoriaConsecutiva = 0;
-  
+
   estrategiaAposEmpate.totalGreens = 0;
   estrategiaAposEmpate.totalReds = 0;
   estrategiaAposEmpate.vitoriaConsecutiva = 0;
-  
+
   estrategiaAlternancia.totalGreens = 0;
   estrategiaAlternancia.totalReds = 0;
   estrategiaAlternancia.vitoriaConsecutiva = 0;
-  
+
   contadorRodadas = 0;
-  
+
   // Não reiniciamos sequências máximas históricas
 
   console.log("Contadores reiniciados para o novo dia.");
