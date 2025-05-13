@@ -4,13 +4,15 @@
   "description": "",
   "main": "bot_bacbo.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bot_bacbo.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.9.0",
+    "cheerio": "^1.0.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "puppeteer": "^24.8.2"
