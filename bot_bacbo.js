@@ -9,6 +9,14 @@ let ultimoDiaVerificado = new Date().getDate(); // Dia do mês atual
 let contadorRodadas = 0;
 let ultimoResultadoProcessado = null;
 
+const userAgents = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.76",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0",
+];
+
 // Contadores gerais
 let totalPlayer = 0;
 let totalBanker = 0;
@@ -204,9 +212,58 @@ async function getBacBoResultado() {
         page = await browser.newPage();
 
         // Configurando o User-Agent para parecer um navegador normal
-        await page.setUserAgent(
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        );
+        // Escolhe um User-Agent aleatório da lista
+        const randomUserAgent =
+          userAgents[Math.floor(Math.random() * userAgents.length)];
+        await page.setUserAgent(randomUserAgent);
+        console.log(`Usando User-Agent: ${randomUserAgent}`);
+
+        // ADICIONE ESTE CÓDIGO AQUI:
+        // Configurações para evitar detecção de automação
+        await page.evaluateOnNewDocument(() => {
+          // Fingir que não é um WebDriver
+          Object.defineProperty(navigator, "webdriver", {
+            get: () => false,
+          });
+
+          // Fingir plugins e mimetypes do navegador
+          window.navigator.plugins = { length: 3, item: () => ({}) };
+          window.navigator.mimeTypes = { length: 3, item: () => ({}) };
+
+          // Adicionar um Canvas falso para dificultar fingerprinting
+          const getContext = HTMLCanvasElement.prototype.getContext;
+          HTMLCanvasElement.prototype.getContext = function (contextType) {
+            const context = getContext.apply(this, arguments);
+            if (contextType === "2d") {
+              const getImageData = context.getImageData;
+              context.getImageData = function () {
+                const imageData = getImageData.apply(this, arguments);
+                // Adiciona pequenas variações aleatórias nos pixels
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                  imageData.data[i] += Math.floor(Math.random() * 10);
+                }
+                return imageData;
+              };
+            }
+            return context;
+          };
+        });
+
+        // Configurar cabeçalhos HTTP mais realistas
+        await page.setExtraHTTPHeaders({
+          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Cache-Control": "max-age=0",
+          Connection: "keep-alive",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          "Upgrade-Insecure-Requests": "1",
+          Referer: "https://www.google.com/",
+        });
 
         // Otimizações adicionais para ambiente VPS
         await page.setRequestInterception(true);
@@ -384,6 +441,8 @@ async function getBacBoResultado() {
 
     console.log("Seletor encontrado, extraindo resultados...");
 
+    await simularComportamentoHumano(page);
+
     // Extraindo os resultados do Bac Bo da nova estrutura HTML
     const resultados = await page
       .evaluate(() => {
@@ -534,6 +593,28 @@ async function getBacBoResultado() {
       page = null;
       browser = null;
     }
+  }
+}
+
+// Função para simular comportamento humano
+async function simularComportamentoHumano(page) {
+  try {
+    // Movimento de mouse aleatório
+    await page.mouse.move(
+      100 + Math.floor(Math.random() * 100),
+      100 + Math.floor(Math.random() * 100),
+      { steps: 10 }
+    );
+
+    // Pequena rolagem na página
+    await page.evaluate(() => {
+      window.scrollBy(0, 100 + Math.floor(Math.random() * 200));
+    });
+
+    // Espera um pouco (como um humano pensando)
+    await page.waitForTimeout(1000 + Math.floor(Math.random() * 2000));
+  } catch (err) {
+    console.error("Erro ao simular comportamento humano:", err.message);
   }
 }
 
