@@ -47,6 +47,9 @@ let estrategiaSequencia = {
   rodadaG0: null,
   totalGreens: 0,
   totalReds: 0,
+  greensG0: 0, // Novo contador para vitórias no G0
+  greensG1: 0, // Novo contador para vitórias no G1
+  redsG1: 0, // Novo contador para derrotas no G1
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
   maiorVitoriaConsecutiva: 0,
@@ -60,6 +63,9 @@ let estrategiaAposEmpate = {
   rodadaG0: null,
   totalGreens: 0,
   totalReds: 0,
+  greensG0: 0, // Novo contador para vitórias no G0
+  greensG1: 0, // Novo contador para vitórias no G1
+  redsG1: 0, // Novo contador para derrotas no G1
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
   maiorVitoriaConsecutiva: 0,
@@ -74,6 +80,25 @@ let estrategiaAlternancia = {
   rodadaG0: null,
   totalGreens: 0,
   totalReds: 0,
+  greensG0: 0, // Novo contador para vitórias no G0
+  greensG1: 0, // Novo contador para vitórias no G1
+  redsG1: 0, // Novo contador para derrotas no G1
+  ultimaVitoria: null,
+  vitoriaConsecutiva: 0,
+  maiorVitoriaConsecutiva: 0,
+};
+
+let estrategiaProporcaoDinamica = {
+  alertaAtivo: false,
+  windowSize: 20, // Tamanho da janela para análise (últimos 20 resultados)
+  limiteDesbalanceamento: 65, // Percentual que indica desbalanceamento (65% significa 65:35)
+  alvoProximaRodada: null,
+  rodadaG0: null,
+  totalGreens: 0,
+  totalReds: 0,
+  greensG0: 0, // Novo contador para vitórias no G0
+  greensG1: 0, // Novo contador para vitórias no G1
+  redsG1: 0, // Novo contador para derrotas no G1
   ultimaVitoria: null,
   vitoriaConsecutiva: 0,
   maiorVitoriaConsecutiva: 0,
@@ -90,21 +115,21 @@ const TELEGRAM_CHAT_ID_SEQUENCIA = process.env.TELEGRAM_CHAT_ID_SEQUENCIA;
 const TELEGRAM_TOKEN_APOS_EMPATE = process.env.TELEGRAM_TOKEN_APOS_EMPATE;
 const TELEGRAM_CHAT_ID_APOS_EMPATE = process.env.TELEGRAM_CHAT_ID_APOS_EMPATE;
 
+const TELEGRAM_TOKEN_PROPORCAO = process.env.TELEGRAM_TOKEN_PROPORCAO;
+const TELEGRAM_CHAT_ID_PROPORCAO = process.env.TELEGRAM_CHAT_ID_PROPORCAO;
+
 // Variáveis globais para controlar o navegador
 let browser = null;
 let page = null;
 
-// Função atualizada para buscar resultados do Bac Bo usando a nova div
-// Função atualizada para funcionar no Windows - correção de erros específicos
-// Função getBacBoResultado otimizada para ambiente de servidor Ubuntu VPS
 // Adicione estas variáveis globais no início do seu código
 let ultimaReinicializacaoNavegador = Date.now();
 const INTERVALO_REINICIALIZACAO = 15 * 60 * 1000; // 15 minutos em milissegundos
 
-// Função modificada do getBacBoResultado para reiniciar o navegador periodicamente
+// Função atualizada para buscar resultados do Bac Bo do site tipminer.com
 async function getBacBoResultado() {
   try {
-    console.log("Buscando resultados do Bac Bo...");
+    console.log("Buscando resultados do Bac Bo no tipminer...");
 
     // Verificar se é hora de reiniciar o navegador
     const tempoAtual = Date.now();
@@ -190,7 +215,7 @@ async function getBacBoResultado() {
           const blockedResourceTypes = ["image", "media", "font", "stylesheet"];
           if (
             blockedResourceTypes.includes(request.resourceType()) &&
-            !request.url().includes("casinoscores.com") // só bloqueia recursos de terceiros
+            !request.url().includes("tipminer.com") // só bloqueia recursos de terceiros
           ) {
             request.abort();
           } else {
@@ -259,7 +284,7 @@ async function getBacBoResultado() {
     verificarMudancaDeDia();
 
     try {
-      // Navegar para a página com tentativas máximas de recuperação
+      // Navegar para o novo site com tentativas máximas de recuperação
       let tentativas = 0;
       const MAX_TENTATIVAS = 3;
       let navegacaoSucesso = false;
@@ -268,11 +293,11 @@ async function getBacBoResultado() {
         try {
           tentativas++;
           console.log(
-            `Tentativa ${tentativas}/${MAX_TENTATIVAS} - Navegando para casinoscores.com/pt-br/bac-bo/...`
+            `Tentativa ${tentativas}/${MAX_TENTATIVAS} - Navegando para tipminer.com/br/historico/blaze/bac-bo-ao-vivo...`
           );
 
           const resposta = await page.goto(
-            "https://casinoscores.com/pt-br/bac-bo/",
+            "https://www.tipminer.com/br/historico/blaze/bac-bo-ao-vivo",
             {
               waitUntil: "networkidle2",
               timeout: 45000, // reduzindo para 45 segundos
@@ -316,10 +341,10 @@ async function getBacBoResultado() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     console.log(
-      "Verificando se o seletor '#LatestSpinsWidget' existe na página..."
+      "Verificando se os elementos de resultados existem na página..."
     );
 
-    // Verifica se o seletor existe antes de tentar esperar por ele
+    // Verifica se os elementos de resultado existem antes de tentar extraí-los
     let tentativasSeletor = 0;
     const MAX_TENTATIVAS_SELETOR = 3;
     let seletorEncontrado = false;
@@ -328,7 +353,7 @@ async function getBacBoResultado() {
       tentativasSeletor++;
       try {
         const seletorExiste = await page.evaluate(() => {
-          return !!document.querySelector("#LatestSpinsWidget");
+          return !!document.querySelector(".grid__row.flex");
         });
 
         if (seletorExiste) {
@@ -352,52 +377,70 @@ async function getBacBoResultado() {
 
     if (!seletorEncontrado) {
       console.error(
-        "Seletor '#LatestSpinsWidget' não encontrado na página após múltiplas tentativas."
+        "Seletor '.grid__row.flex' não encontrado na página após múltiplas tentativas."
       );
       return; // Sair da função para tentar novamente na próxima execução
     }
 
     console.log("Seletor encontrado, extraindo resultados...");
 
-    // [Resto do código continua como antes]
-    // Extraindo os resultados do Bac Bo da nova div de últimos resultados
+    // Extraindo os resultados do Bac Bo da nova estrutura HTML
     const resultados = await page
       .evaluate(() => {
         try {
           const items = [];
 
-          // Seletor para a nova div de resultados recentes
-          const imagensResultado = document.querySelectorAll(
-            "#LatestSpinsWidget #latestSpinsImg"
+          // Seleciona todos os botões de célula na grid row
+          const celulas = document.querySelectorAll(
+            ".grid__row.flex button.cell"
           );
 
-          if (!imagensResultado || imagensResultado.length === 0) {
-            console.error("Elementos de imagem não encontrados na página");
+          if (!celulas || celulas.length === 0) {
+            console.error("Células de resultado não encontradas na página");
             return [];
           }
 
-          // Processamos cada imagem (cada resultado)
-          Array.from(imagensResultado).forEach((imagem, index) => {
+          // Processamos cada célula de resultado
+          Array.from(celulas).forEach((celula, index) => {
             try {
-              const srcImagem = imagem.getAttribute("src") || "";
+              // Determina o tipo de resultado (player/banker/tie)
               let resultado = null;
-
-              if (srcImagem.includes("/P.png")) {
+              if (celula.classList.contains("cell--type-player")) {
                 resultado = "player";
-              } else if (srcImagem.includes("/B.png")) {
+              } else if (celula.classList.contains("cell--type-banker")) {
                 resultado = "banker";
-              } else if (srcImagem.includes("/TIE.png")) {
+              } else if (celula.classList.contains("cell--type-tie")) {
                 resultado = "tie";
               } else {
-                return; // Ignora se não for um resultado conhecido
+                return; // Ignora se não for um tipo conhecido
               }
 
-              // Nesta nova div, não temos informações sobre as pontuações exatas
-              const playerScore = resultado === "player" ? 6 : 4;
-              const bankerScore = resultado === "banker" ? 6 : 4;
+              // Obtém a pontuação do resultado
+              const resultadoText = celula
+                .querySelector(".cell__result")
+                ?.textContent.trim();
+              const pontuacao = parseInt(resultadoText || "0", 10);
+
+              // Define pontuações do player e banker com base no resultado
+              let playerScore = 0;
+              let bankerScore = 0;
+
+              if (resultado === "player") {
+                playerScore = pontuacao;
+                bankerScore = pontuacao - 2; // Estimativa, já que o player sempre ganha com pontuação maior
+              } else if (resultado === "banker") {
+                bankerScore = pontuacao;
+                playerScore = pontuacao - 2; // Estimativa, já que o banker sempre ganha com pontuação maior
+              } else if (resultado === "tie") {
+                // Em caso de empate, as pontuações são iguais
+                playerScore = pontuacao;
+                bankerScore = pontuacao;
+              }
+
+              // Calcula a diferença entre as pontuações
               const diferenca = Math.abs(playerScore - bankerScore);
 
-              // Adicionamos ao array
+              // Adiciona ao array de resultados
               items.push({
                 player: playerScore,
                 banker: bankerScore,
@@ -406,14 +449,15 @@ async function getBacBoResultado() {
                 indice: index,
                 resultadoString: resultado.substring(0, 1).toUpperCase(),
               });
-            } catch (rowError) {
+            } catch (celError) {
               console.error(
-                "Erro ao processar imagem de resultado:",
-                rowError.message
+                "Erro ao processar célula de resultado:",
+                celError.message
               );
             }
           });
 
+          // Retorna a lista de resultados em ordem (mais recente primeiro)
           return items;
         } catch (evalError) {
           console.error("Erro durante execução no browser:", evalError.message);
@@ -425,7 +469,42 @@ async function getBacBoResultado() {
         return [];
       });
 
-    // [Resto do seu código de processamento de resultados permanece igual...]
+    console.log(`Extraídos ${resultados.length} resultados.`);
+
+    // Se não existirem resultados, sai da função
+    if (!resultados || resultados.length === 0) {
+      console.log("Nenhum resultado foi encontrado.");
+      return;
+    }
+
+    // Vamos construir o histórico de resultados (mais recente primeiro)
+    const ultimoResultado = resultados[0];
+
+    // Verifica se o último resultado é diferente do último processado
+    if (
+      !ultimoResultadoProcessado ||
+      ultimoResultado.resultado !== ultimoResultadoProcessado.resultado ||
+      ultimoResultado.player !== ultimoResultadoProcessado.player ||
+      ultimoResultado.banker !== ultimoResultadoProcessado.banker
+    ) {
+      console.log("Novo resultado detectado! Processando...");
+
+      // Atualiza o último resultado processado
+      ultimoResultadoProcessado = ultimoResultado;
+
+      // Adiciona o resultado ao histórico
+      historico.unshift(ultimoResultado);
+
+      // Limita o tamanho do histórico a 50 resultados
+      if (historico.length > 50) {
+        historico = historico.slice(0, 50);
+      }
+
+      // Processa o novo resultado para as estratégias
+      await processarResultado(ultimoResultado);
+    } else {
+      console.log("Nenhum resultado novo desde a última verificação.");
+    }
   } catch (err) {
     console.error("Erro ao capturar resultado:", err.message);
     console.error("Stack trace:", err.stack);
@@ -513,7 +592,7 @@ async function processarResultado(res) {
   // Log detalhado do estado atual para depuração
   console.log(`--- ESTADO ATUAL ---`);
   console.log(
-    `Alertas ativos: Sequência: ${estrategiaSequencia.alertaAtivo}, Após Empate: ${estrategiaAposEmpate.alertaAtivo}, Alternância: ${estrategiaAlternancia.alertaAtivo}`
+    `Alertas ativos: Sequência: ${estrategiaSequencia.alertaAtivo}, Após Empate: ${estrategiaAposEmpate.alertaAtivo}, Alternância: ${estrategiaAlternancia.alertaAtivo}, Proporção: ${estrategiaProporcaoDinamica.alertaAtivo}`
   );
   console.log(
     `Player: ${totalPlayer}, Banker: ${totalBanker}, Tie: ${totalTie}`
@@ -521,10 +600,16 @@ async function processarResultado(res) {
   console.log(`Diferença atual: ${res.diferenca}`);
   console.log(`-------------------`);
 
-  // Processa as estratégias (removida a estratégia de diferenças)
+  // Processa as estratégias
   await processarEstrategiaSequencia(res);
   await processarEstrategiaAposEmpate(res);
   await processarEstrategiaAlternancia(res);
+  await processarEstrategiaProporcaoDinamica(res); // Nova estratégia adicionada
+
+  // Envia relatório estatístico a cada 50 rodadas
+  if (contadorRodadas % 50 === 0) {
+    await enviarRelatorioEstatistico();
+  }
 
   // Envia resumo a cada 100 rodadas
   if (contadorRodadas % 100 === 0) {
@@ -537,8 +622,8 @@ async function processarResultado(res) {
   }
 }
 
-// Estratégia de Sequência corrigida
-// Estratégia de Sequência corrigida - apostar no MESMO resultado
+// Estratégia de Sequência melhorada com mais logs de depuração
+// Função para processar a estratégia de Sequência com contadores G0/G1
 async function processarEstrategiaSequencia(res) {
   // Verificar se o resultado é um empate e se já temos um alerta ativo
   if (res.resultado === "tie" && estrategiaSequencia.alertaAtivo) {
@@ -548,6 +633,7 @@ async function processarEstrategiaSequencia(res) {
     );
 
     estrategiaSequencia.totalGreens++;
+    estrategiaSequencia.greensG0++; // Considera como vitória no G0
     estrategiaSequencia.vitoriaConsecutiva++;
 
     // Atualiza o contador de maior sequência de vitórias
@@ -566,9 +652,10 @@ async function processarEstrategiaSequencia(res) {
         estrategiaSequencia.vitoriaConsecutiva
       } VITÓRIA${
         estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-      } CONSECUTIVA${
-        estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-      }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+      } CONSECUTIVA${estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} [G0=${
+        estrategiaSequencia.greensG0
+      } G1=${estrategiaSequencia.greensG1}] | Reds: ${
         estrategiaSequencia.totalReds
       }`,
       "sequencia"
@@ -591,6 +678,14 @@ async function processarEstrategiaSequencia(res) {
     console.log("Ignorando empate para análise de estratégia de sequência");
     return;
   }
+
+  // Logs de depuração
+  console.log(`Estado atual da estratégia de sequência:`);
+  console.log(`- Alerta ativo: ${estrategiaSequencia.alertaAtivo}`);
+  console.log(
+    `- sequenciaConsiderada: ${estrategiaSequencia.sequenciaConsiderada}`
+  );
+  console.log(`- Total no histórico: ${historico.length}`);
 
   // Debug para verificar o estado atual
   const resultadosSemEmpate = historico.filter(
@@ -615,6 +710,7 @@ async function processarEstrategiaSequencia(res) {
 
     if (res.resultado === estrategiaSequencia.alvoAtual) {
       estrategiaSequencia.totalGreens++;
+      estrategiaSequencia.greensG0++; // Incrementa contador de G0
       estrategiaSequencia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -633,9 +729,10 @@ async function processarEstrategiaSequencia(res) {
           estrategiaSequencia.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+        } CONSECUTIVA${estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} [G0=${
+          estrategiaSequencia.greensG0
+        } G1=${estrategiaSequencia.greensG1}] | Reds: ${
           estrategiaSequencia.totalReds
         }`,
         "sequencia"
@@ -671,6 +768,7 @@ async function processarEstrategiaSequencia(res) {
 
     if (res.resultado === estrategiaSequencia.alvoAtual) {
       estrategiaSequencia.totalGreens++;
+      estrategiaSequencia.greensG1++; // Incrementa contador de G1
       estrategiaSequencia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -689,9 +787,10 @@ async function processarEstrategiaSequencia(res) {
           estrategiaSequencia.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+        } CONSECUTIVA${estrategiaSequencia.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} [G0=${
+          estrategiaSequencia.greensG0
+        } G1=${estrategiaSequencia.greensG1}] | Reds: ${
           estrategiaSequencia.totalReds
         }`,
         "sequencia"
@@ -709,14 +808,18 @@ async function processarEstrategiaSequencia(res) {
       resetarAlertaSequencia();
     } else {
       estrategiaSequencia.totalReds++;
+      estrategiaSequencia.redsG1++; // Incrementa contador de Reds no G1
       estrategiaSequencia.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
         `❌ SEQUÊNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
           res.banker
-        }], ❌ Red na estratégia de sequência\n📊 Sequência: Greens: ${
-          estrategiaSequencia.totalGreens
-        } | Reds: ${estrategiaSequencia.totalReds}`,
+        }], ❌ Red na estratégia de sequência
+📊 Sequência: Greens: ${estrategiaSequencia.totalGreens} [G0=${
+          estrategiaSequencia.greensG0
+        } G1=${estrategiaSequencia.greensG1}] | Reds: ${
+          estrategiaSequencia.totalReds
+        }`,
         "sequencia"
       );
 
@@ -765,15 +868,22 @@ async function processarEstrategiaSequencia(res) {
       console.log(`Todos iguais a ${primeiroResultado}? ${todosIguais}`);
 
       if (todosIguais) {
+        console.log("**** SEQUÊNCIA DE 4 DETECTADA! ****");
         estrategiaSequencia.alertaAtivo = true;
-        // Define o alvo como o MESMO da sequência detectada (não mais o oposto)
+        // Define o alvo como o MESMO da sequência detectada
         estrategiaSequencia.alvoAtual = primeiroResultado;
         estrategiaSequencia.alvoProximaRodada = estrategiaSequencia.alvoAtual; // Para compatibilidade
 
         await enviarTelegram(
           `⚠️ ESTRATÉGIA DE SEQUÊNCIA: ${
             estrategiaSequencia.sequenciaConsiderada
-          }x ${primeiroResultado.toUpperCase()} seguidos!\n🎯 Entrada sugerida: ${estrategiaSequencia.alvoAtual.toUpperCase()} na próxima rodada!`,
+          }x ${primeiroResultado.toUpperCase()} seguidos!
+🎯 Entrada sugerida: ${estrategiaSequencia.alvoAtual.toUpperCase()} na próxima rodada!
+📊 Stats: Greens: ${estrategiaSequencia.totalGreens} [G0=${
+            estrategiaSequencia.greensG0
+          } G1=${estrategiaSequencia.greensG1}] | Reds: ${
+            estrategiaSequencia.totalReds
+          }`,
           "sequencia"
         );
 
@@ -787,6 +897,7 @@ async function processarEstrategiaSequencia(res) {
 
 // Estratégia Após Empate - Corrigida
 // Estratégia Após Empate corrigida - considera novo empate como vitória
+// Função para processar Estratégia Após Empate com contadores G0/G1
 async function processarEstrategiaAposEmpate(res) {
   // Se o resultado atual é um empate
   if (res.resultado === "tie") {
@@ -797,6 +908,7 @@ async function processarEstrategiaAposEmpate(res) {
       );
 
       estrategiaAposEmpate.totalGreens++;
+      estrategiaAposEmpate.greensG0++; // Considera como vitória no G0
       estrategiaAposEmpate.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -815,11 +927,12 @@ async function processarEstrategiaAposEmpate(res) {
           estrategiaAposEmpate.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Após Empate: Greens: ${
-          estrategiaAposEmpate.totalGreens
-        } | Reds: ${estrategiaAposEmpate.totalReds}`,
+        } CONSECUTIVA${estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+          estrategiaAposEmpate.greensG0
+        } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
+          estrategiaAposEmpate.totalReds
+        }`,
         "aposEmpate"
       );
 
@@ -857,7 +970,13 @@ async function processarEstrategiaAposEmpate(res) {
       await enviarTelegram(
         `⚠️ ESTRATÉGIA APÓS EMPATE: Empate [${res.player}-${
           res.banker
-        }] detectado!\n🎯 Entrada sugerida: ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()} na próxima rodada (mesmo vencedor da rodada anterior ao empate)`,
+        }] detectado!
+🎯 Entrada sugerida: ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()} na próxima rodada (mesmo vencedor da rodada anterior ao empate)
+📊 Stats: Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+          estrategiaAposEmpate.greensG0
+        } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
+          estrategiaAposEmpate.totalReds
+        }`,
         "aposEmpate"
       );
 
@@ -883,6 +1002,7 @@ async function processarEstrategiaAposEmpate(res) {
 
     if (res.resultado === estrategiaAposEmpate.alvoAposEmpate) {
       estrategiaAposEmpate.totalGreens++;
+      estrategiaAposEmpate.greensG0++; // Incrementa contador de G0
       estrategiaAposEmpate.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -901,11 +1021,12 @@ async function processarEstrategiaAposEmpate(res) {
           estrategiaAposEmpate.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Após Empate: Greens: ${
-          estrategiaAposEmpate.totalGreens
-        } | Reds: ${estrategiaAposEmpate.totalReds}`,
+        } CONSECUTIVA${estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+          estrategiaAposEmpate.greensG0
+        } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
+          estrategiaAposEmpate.totalReds
+        }`,
         "aposEmpate"
       );
 
@@ -937,6 +1058,7 @@ async function processarEstrategiaAposEmpate(res) {
 
     if (res.resultado === estrategiaAposEmpate.alvoAposEmpate) {
       estrategiaAposEmpate.totalGreens++;
+      estrategiaAposEmpate.greensG1++; // Incrementa contador de G1
       estrategiaAposEmpate.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -955,11 +1077,12 @@ async function processarEstrategiaAposEmpate(res) {
           estrategiaAposEmpate.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Após Empate: Greens: ${
-          estrategiaAposEmpate.totalGreens
-        } | Reds: ${estrategiaAposEmpate.totalReds}`,
+        } CONSECUTIVA${estrategiaAposEmpate.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+          estrategiaAposEmpate.greensG0
+        } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
+          estrategiaAposEmpate.totalReds
+        }`,
         "aposEmpate"
       );
 
@@ -975,14 +1098,18 @@ async function processarEstrategiaAposEmpate(res) {
       resetarAlertaAposEmpate();
     } else {
       estrategiaAposEmpate.totalReds++;
+      estrategiaAposEmpate.redsG1++; // Incrementa contador de Reds no G1
       estrategiaAposEmpate.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
         `❌ APÓS EMPATE: ${res.resultado.toUpperCase()} [${res.player}-${
           res.banker
-        }], ❌ Red! Esperávamos ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()}, mas veio ${res.resultado.toUpperCase()}\n📊 Após Empate: Greens: ${
-          estrategiaAposEmpate.totalGreens
-        } | Reds: ${estrategiaAposEmpate.totalReds}`,
+        }], ❌ Red! Esperávamos ${estrategiaAposEmpate.alvoAposEmpate.toUpperCase()}, mas veio ${res.resultado.toUpperCase()}
+📊 Após Empate: Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+          estrategiaAposEmpate.greensG0
+        } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
+          estrategiaAposEmpate.totalReds
+        }`,
         "aposEmpate"
       );
 
@@ -1001,6 +1128,7 @@ async function processarEstrategiaAposEmpate(res) {
 }
 
 // Estratégia de Alternância
+// Função para processar Estratégia de Alternância com contadores G0/G1
 async function processarEstrategiaAlternancia(res) {
   // Ignorar empates para esta estratégia
   if (res.resultado === "tie") {
@@ -1020,6 +1148,7 @@ async function processarEstrategiaAlternancia(res) {
 
     if (res.resultado === estrategiaAlternancia.proximoResultadoEsperado) {
       estrategiaAlternancia.totalGreens++;
+      estrategiaAlternancia.greensG0++; // Incrementa contador de G0
       estrategiaAlternancia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -1038,11 +1167,12 @@ async function processarEstrategiaAlternancia(res) {
           estrategiaAlternancia.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Alternância: Greens: ${
-          estrategiaAlternancia.totalGreens
-        } | Reds: ${estrategiaAlternancia.totalReds}`,
+        } CONSECUTIVA${estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+          estrategiaAlternancia.greensG0
+        } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
+          estrategiaAlternancia.totalReds
+        }`,
         "alternancia"
       );
 
@@ -1082,6 +1212,7 @@ async function processarEstrategiaAlternancia(res) {
 
     if (res.resultado === proximoEsperadoG1) {
       estrategiaAlternancia.totalGreens++;
+      estrategiaAlternancia.greensG1++; // Incrementa contador de G1
       estrategiaAlternancia.vitoriaConsecutiva++;
 
       // Atualiza o contador de maior sequência de vitórias
@@ -1100,11 +1231,12 @@ async function processarEstrategiaAlternancia(res) {
           estrategiaAlternancia.vitoriaConsecutiva
         } VITÓRIA${
           estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        } CONSECUTIVA${
-          estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""
-        }]\n📊 Alternância: Greens: ${
-          estrategiaAlternancia.totalGreens
-        } | Reds: ${estrategiaAlternancia.totalReds}`,
+        } CONSECUTIVA${estrategiaAlternancia.vitoriaConsecutiva > 1 ? "S" : ""}]
+📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+          estrategiaAlternancia.greensG0
+        } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
+          estrategiaAlternancia.totalReds
+        }`,
         "alternancia"
       );
 
@@ -1120,14 +1252,18 @@ async function processarEstrategiaAlternancia(res) {
       resetarAlertaAlternancia();
     } else {
       estrategiaAlternancia.totalReds++;
+      estrategiaAlternancia.redsG1++; // Incrementa contador de Reds no G1
       estrategiaAlternancia.vitoriaConsecutiva = 0;
 
       await enviarTelegram(
         `❌ ALTERNÂNCIA: ${res.resultado.toUpperCase()} [${res.player}-${
           res.banker
-        }], ❌ Red na estratégia de alternância\n📊 Alternância: Greens: ${
-          estrategiaAlternancia.totalGreens
-        } | Reds: ${estrategiaAlternancia.totalReds}`,
+        }], ❌ Red na estratégia de alternância
+📊 Alternância: Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+          estrategiaAlternancia.greensG0
+        } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
+          estrategiaAlternancia.totalReds
+        }`,
         "alternancia"
       );
 
@@ -1177,12 +1313,245 @@ async function processarEstrategiaAlternancia(res) {
 🔄 Últimos resultados: ${resultadosFiltrados
             .map((r) => r.resultado.toUpperCase().charAt(0))
             .join("")}
-🎯 Entrada sugerida: ${estrategiaAlternancia.proximoResultadoEsperado.toUpperCase()} na próxima rodada!`,
+🎯 Entrada sugerida: ${estrategiaAlternancia.proximoResultadoEsperado.toUpperCase()} na próxima rodada!
+📊 Stats: Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+            estrategiaAlternancia.greensG0
+          } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
+            estrategiaAlternancia.totalReds
+          }`,
           "alternancia"
         );
 
         console.log(
           `Alerta ativado para alternância! Próximo esperado: ${estrategiaAlternancia.proximoResultadoEsperado}`
+        );
+      }
+    }
+  }
+}
+
+//Estratégia de Proporção Dinâmica uuuuuh
+// Função para processar Estratégia de Proporção Dinâmica com contadores G0/G1
+async function processarEstrategiaProporcaoDinamica(res) {
+  // Ignorar empates para esta estratégia
+  if (res.resultado === "tie") {
+    console.log("Ignorando empate para estratégia de Proporção Dinâmica");
+    return;
+  }
+
+  // Primeira rodada após detectar desbalanceamento (G0)
+  if (
+    estrategiaProporcaoDinamica.alertaAtivo &&
+    estrategiaProporcaoDinamica.alvoProximaRodada &&
+    estrategiaProporcaoDinamica.rodadaG0 === null
+  ) {
+    console.log(
+      `Alerta ativo para Proporção Dinâmica, primeira tentativa (G0). Alvo: ${estrategiaProporcaoDinamica.alvoProximaRodada}`
+    );
+
+    if (res.resultado === estrategiaProporcaoDinamica.alvoProximaRodada) {
+      estrategiaProporcaoDinamica.totalGreens++;
+      estrategiaProporcaoDinamica.greensG0++; // Incrementa contador de G0
+      estrategiaProporcaoDinamica.vitoriaConsecutiva++;
+
+      // Atualiza o contador de maior sequência de vitórias
+      if (
+        estrategiaProporcaoDinamica.vitoriaConsecutiva >
+        estrategiaProporcaoDinamica.maiorVitoriaConsecutiva
+      ) {
+        estrategiaProporcaoDinamica.maiorVitoriaConsecutiva =
+          estrategiaProporcaoDinamica.vitoriaConsecutiva;
+      }
+
+      await enviarTelegram(
+        `🟢 PROPORÇÃO: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green para estratégia de Proporção Dinâmica! [${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva
+        } VITÓRIA${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva > 1 ? "S" : ""
+        } CONSECUTIVA${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva > 1 ? "S" : ""
+        }]
+📊 Proporção: Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+          estrategiaProporcaoDinamica.greensG0
+        } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+          estrategiaProporcaoDinamica.totalReds
+        }`,
+        "proporcao"
+      );
+
+      // Registrar a vitória
+      estrategiaProporcaoDinamica.ultimaVitoria = {
+        resultado: res.resultado,
+        player: res.player,
+        banker: res.banker,
+        dataHora: new Date(),
+      };
+
+      // Resetar alerta
+      resetarAlertaProporcaoDinamica();
+    } else {
+      await enviarTelegram(
+        `🔄 PROPORÇÃO: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], vamos para o G1 na estratégia de Proporção Dinâmica...`,
+        "proporcao"
+      );
+      estrategiaProporcaoDinamica.rodadaG0 = res;
+    }
+  }
+  // Segunda rodada após detectar desbalanceamento (G1)
+  else if (
+    estrategiaProporcaoDinamica.alertaAtivo &&
+    estrategiaProporcaoDinamica.alvoProximaRodada &&
+    estrategiaProporcaoDinamica.rodadaG0
+  ) {
+    console.log("Processando G1 para estratégia de Proporção Dinâmica");
+
+    if (res.resultado === estrategiaProporcaoDinamica.alvoProximaRodada) {
+      estrategiaProporcaoDinamica.totalGreens++;
+      estrategiaProporcaoDinamica.greensG1++; // Incrementa contador de G1
+      estrategiaProporcaoDinamica.vitoriaConsecutiva++;
+
+      // Atualiza o contador de maior sequência de vitórias
+      if (
+        estrategiaProporcaoDinamica.vitoriaConsecutiva >
+        estrategiaProporcaoDinamica.maiorVitoriaConsecutiva
+      ) {
+        estrategiaProporcaoDinamica.maiorVitoriaConsecutiva =
+          estrategiaProporcaoDinamica.vitoriaConsecutiva;
+      }
+
+      await enviarTelegram(
+        `🟢 PROPORÇÃO: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ✅ Green no G1 para estratégia de Proporção Dinâmica! [${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva
+        } VITÓRIA${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva > 1 ? "S" : ""
+        } CONSECUTIVA${
+          estrategiaProporcaoDinamica.vitoriaConsecutiva > 1 ? "S" : ""
+        }]
+📊 Proporção: Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+          estrategiaProporcaoDinamica.greensG0
+        } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+          estrategiaProporcaoDinamica.totalReds
+        }`,
+        "proporcao"
+      );
+
+      // Registrar a vitória
+      estrategiaProporcaoDinamica.ultimaVitoria = {
+        resultado: res.resultado,
+        player: res.player,
+        banker: res.banker,
+        dataHora: new Date(),
+      };
+
+      // Resetar alerta
+      resetarAlertaProporcaoDinamica();
+    } else {
+      estrategiaProporcaoDinamica.totalReds++;
+      estrategiaProporcaoDinamica.redsG1++; // Incrementa contador de Reds no G1
+      estrategiaProporcaoDinamica.vitoriaConsecutiva = 0;
+
+      await enviarTelegram(
+        `❌ PROPORÇÃO: ${res.resultado.toUpperCase()} [${res.player}-${
+          res.banker
+        }], ❌ Red na estratégia de Proporção Dinâmica
+📊 Proporção: Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+          estrategiaProporcaoDinamica.greensG0
+        } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+          estrategiaProporcaoDinamica.totalReds
+        }`,
+        "proporcao"
+      );
+
+      // Registrar a derrota
+      estrategiaProporcaoDinamica.ultimaVitoria = {
+        resultado: res.resultado,
+        player: res.player,
+        banker: res.banker,
+        dataHora: new Date(),
+      };
+
+      // Resetar alerta
+      resetarAlertaProporcaoDinamica();
+    }
+  }
+  // Análise normal do histórico para detecção de desbalanceamento na proporção
+  else if (
+    !estrategiaProporcaoDinamica.alertaAtivo &&
+    historico.length >= estrategiaProporcaoDinamica.windowSize
+  ) {
+    // Verificamos os últimos N resultados, ignorando empates
+    const resultadosSemEmpate = historico
+      .filter((item) => item.resultado !== "tie")
+      .slice(0, estrategiaProporcaoDinamica.windowSize);
+
+    // Se temos resultados suficientes após filtrar empates
+    if (resultadosSemEmpate.length >= 10) {
+      // Pelo menos 10 resultados para análise
+      const totalResultados = resultadosSemEmpate.length;
+      const totalPlayer = resultadosSemEmpate.filter(
+        (item) => item.resultado === "player"
+      ).length;
+      const totalBanker = resultadosSemEmpate.filter(
+        (item) => item.resultado === "banker"
+      ).length;
+
+      // Calculamos as porcentagens
+      const percentualPlayer = (totalPlayer / totalResultados) * 100;
+      const percentualBanker = (totalBanker / totalResultados) * 100;
+
+      console.log(
+        `Proporção atual: Player ${percentualPlayer.toFixed(
+          1
+        )}% vs Banker ${percentualBanker.toFixed(1)}%`
+      );
+
+      // Verificamos se há desbalanceamento significativo
+      if (
+        percentualPlayer >=
+          estrategiaProporcaoDinamica.limiteDesbalanceamento ||
+        percentualBanker >= estrategiaProporcaoDinamica.limiteDesbalanceamento
+      ) {
+        // Se há desbalanceamento, apostamos no resultado menos frequente
+        estrategiaProporcaoDinamica.alertaAtivo = true;
+
+        // O alvo é o resultado menos frequente
+        estrategiaProporcaoDinamica.alvoProximaRodada =
+          percentualPlayer > percentualBanker ? "banker" : "player";
+
+        // Formatamos a mensagem de alerta
+        const maiorPercentual = Math.max(
+          percentualPlayer,
+          percentualBanker
+        ).toFixed(1);
+        const menorPercentual = Math.min(
+          percentualPlayer,
+          percentualBanker
+        ).toFixed(1);
+        const maiorResultado =
+          percentualPlayer > percentualBanker ? "PLAYER" : "BANKER";
+        const menorResultado =
+          percentualPlayer > percentualBanker ? "BANKER" : "PLAYER";
+
+        await enviarTelegram(
+          `⚠️ ESTRATÉGIA DE PROPORÇÃO DINÂMICA: Desbalanceamento detectado!
+📊 Últimos ${totalResultados} resultados: ${maiorResultado} ${maiorPercentual}% vs ${menorResultado} ${menorPercentual}%
+🎯 Entrada sugerida: ${estrategiaProporcaoDinamica.alvoProximaRodada.toUpperCase()} na próxima rodada!
+📊 Stats: Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+            estrategiaProporcaoDinamica.greensG0
+          } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+            estrategiaProporcaoDinamica.totalReds
+          }`,
+          "proporcao"
+        );
+
+        console.log(
+          `Alerta ativado para Proporção Dinâmica! Alvo: ${estrategiaProporcaoDinamica.alvoProximaRodada}`
         );
       }
     }
@@ -1214,6 +1583,158 @@ function resetarAlertaAlternancia() {
   estrategiaAlternancia.rodadaG0 = null;
 }
 
+// Função aprimorada para enviar relatório estatístico com taxas de G0/G1
+async function enviarRelatorioEstatistico() {
+  // Calcular taxas de sucesso para cada estratégia
+  const taxaG0Sequencia = calcularTaxaDeSucesso(
+    estrategiaSequencia.greensG0,
+    estrategiaSequencia.greensG0 + (estrategiaSequencia.rodadaG0 ? 1 : 0)
+  );
+
+  const taxaG1Sequencia = calcularTaxaDeSucesso(
+    estrategiaSequencia.greensG1,
+    estrategiaSequencia.greensG1 + estrategiaSequencia.redsG1
+  );
+
+  const taxaG0AposEmpate = calcularTaxaDeSucesso(
+    estrategiaAposEmpate.greensG0,
+    estrategiaAposEmpate.greensG0 + (estrategiaAposEmpate.rodadaG0 ? 1 : 0)
+  );
+
+  const taxaG1AposEmpate = calcularTaxaDeSucesso(
+    estrategiaAposEmpate.greensG1,
+    estrategiaAposEmpate.greensG1 + estrategiaAposEmpate.redsG1
+  );
+
+  const taxaG0Alternancia = calcularTaxaDeSucesso(
+    estrategiaAlternancia.greensG0,
+    estrategiaAlternancia.greensG0 + (estrategiaAlternancia.rodadaG0 ? 1 : 0)
+  );
+
+  const taxaG1Alternancia = calcularTaxaDeSucesso(
+    estrategiaAlternancia.greensG1,
+    estrategiaAlternancia.greensG1 + estrategiaAlternancia.redsG1
+  );
+
+  const taxaG0Proporcao = calcularTaxaDeSucesso(
+    estrategiaProporcaoDinamica.greensG0,
+    estrategiaProporcaoDinamica.greensG0 +
+      (estrategiaProporcaoDinamica.rodadaG0 ? 1 : 0)
+  );
+
+  const taxaG1Proporcao = calcularTaxaDeSucesso(
+    estrategiaProporcaoDinamica.greensG1,
+    estrategiaProporcaoDinamica.greensG1 + estrategiaProporcaoDinamica.redsG1
+  );
+
+  // Calcular taxa total de sucesso para cada estratégia
+  const taxaTotalSequencia = calcularTaxaDeSucesso(
+    estrategiaSequencia.totalGreens,
+    estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds
+  );
+
+  const taxaTotalAposEmpate = calcularTaxaDeSucesso(
+    estrategiaAposEmpate.totalGreens,
+    estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds
+  );
+
+  const taxaTotalAlternancia = calcularTaxaDeSucesso(
+    estrategiaAlternancia.totalGreens,
+    estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds
+  );
+
+  const taxaTotalProporcao = calcularTaxaDeSucesso(
+    estrategiaProporcaoDinamica.totalGreens,
+    estrategiaProporcaoDinamica.totalGreens +
+      estrategiaProporcaoDinamica.totalReds
+  );
+
+  // Criar array para ranking
+  const estrategias = [
+    { nome: "Sequência", taxa: taxaTotalSequencia },
+    { nome: "Após Empate", taxa: taxaTotalAposEmpate },
+    { nome: "Alternância", taxa: taxaTotalAlternancia },
+    { nome: "Proporção", taxa: taxaTotalProporcao },
+  ];
+
+  // Ordenar por taxa de sucesso (maior para menor)
+  estrategias.sort((a, b) => b.taxa - a.taxa);
+
+  // Enviar relatório detalhado
+  await enviarTelegram(
+    `📊 RELATÓRIO ESTATÍSTICO G0/G1 - RODADA #${contadorRodadas} 📊
+
+🏆 RANKING DE ESTRATÉGIAS (taxa total de sucesso):
+1. ${estrategias[0].nome}: ${estrategias[0].taxa}% de acerto
+2. ${estrategias[1].nome}: ${estrategias[1].taxa}% de acerto
+3. ${estrategias[2].nome}: ${estrategias[2].taxa}% de acerto
+4. ${estrategias[3].nome}: ${estrategias[3].taxa}% de acerto
+
+🎲 SEQUÊNCIA:
+▶️ Total: ${estrategiaSequencia.totalGreens} greens / ${
+      estrategiaSequencia.totalReds
+    } reds (${taxaTotalSequencia}% acerto)
+▶️ G0: ${estrategiaSequencia.greensG0} greens (${taxaG0Sequencia}% acerto)
+▶️ G1: ${estrategiaSequencia.greensG1} greens / ${
+      estrategiaSequencia.redsG1
+    } reds (${taxaG1Sequencia}% acerto)
+
+🎲 APÓS EMPATE:
+▶️ Total: ${estrategiaAposEmpate.totalGreens} greens / ${
+      estrategiaAposEmpate.totalReds
+    } reds (${taxaTotalAposEmpate}% acerto)
+▶️ G0: ${estrategiaAposEmpate.greensG0} greens (${taxaG0AposEmpate}% acerto)
+▶️ G1: ${estrategiaAposEmpate.greensG1} greens / ${
+      estrategiaAposEmpate.redsG1
+    } reds (${taxaG1AposEmpate}% acerto)
+
+🎲 ALTERNÂNCIA:
+▶️ Total: ${estrategiaAlternancia.totalGreens} greens / ${
+      estrategiaAlternancia.totalReds
+    } reds (${taxaTotalAlternancia}% acerto)
+▶️ G0: ${estrategiaAlternancia.greensG0} greens (${taxaG0Alternancia}% acerto)
+▶️ G1: ${estrategiaAlternancia.greensG1} greens / ${
+      estrategiaAlternancia.redsG1
+    } reds (${taxaG1Alternancia}% acerto)
+
+🎲 PROPORÇÃO DINÂMICA:
+▶️ Total: ${estrategiaProporcaoDinamica.totalGreens} greens / ${
+      estrategiaProporcaoDinamica.totalReds
+    } reds (${taxaTotalProporcao}% acerto)
+▶️ G0: ${
+      estrategiaProporcaoDinamica.greensG0
+    } greens (${taxaG0Proporcao}% acerto)
+▶️ G1: ${estrategiaProporcaoDinamica.greensG1} greens / ${
+      estrategiaProporcaoDinamica.redsG1
+    } reds (${taxaG1Proporcao}% acerto)
+
+📊 Métricas gerais:
+📌 Total de rodadas: ${contadorRodadas}
+📌 Player: ${totalPlayer} (${Math.round(
+      (totalPlayer / contadorRodadas) * 100
+    )}%)
+📌 Banker: ${totalBanker} (${Math.round(
+      (totalBanker / contadorRodadas) * 100
+    )}%)
+📌 Tie: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)`,
+    "geral"
+  );
+}
+
+// Função para resetar o alerta da estratégia de Proporção Dinâmica
+function resetarAlertaProporcaoDinamica() {
+  console.log("Resetando alerta de Proporção Dinâmica");
+  estrategiaProporcaoDinamica.alertaAtivo = false;
+  estrategiaProporcaoDinamica.alvoProximaRodada = null;
+  estrategiaProporcaoDinamica.rodadaG0 = null;
+}
+
+// Função auxiliar para calcular taxa de sucesso
+function calcularTaxaDeSucesso(numerador, denominador) {
+  if (!numerador || !denominador) return 0;
+  return Math.round((numerador / denominador) * 100);
+}
+
 // Envia mensagem para o Telegram
 async function enviarTelegram(mensagem, estrategia = "geral") {
   try {
@@ -1240,6 +1761,10 @@ async function enviarTelegram(mensagem, estrategia = "geral") {
         // Use o token principal como fallback
         token = TELEGRAM_TOKEN;
         chatId = TELEGRAM_CHAT_ID;
+        break;
+      case "proporcao":
+        token = TELEGRAM_TOKEN_PROPORCAO;
+        chatId = TELEGRAM_CHAT_ID_PROPORCAO;
         break;
       default:
         // Para relatórios e resultados gerais
@@ -1304,22 +1829,36 @@ async function enviarResumo() {
 ✅ TIE: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)
 
 🎲 ESTATÍSTICAS DE SEQUÊNCIA:
-Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
-    estrategiaSequencia.totalReds
-  }
+Greens: ${estrategiaSequencia.totalGreens} [G0=${
+    estrategiaSequencia.greensG0
+  } G1=${estrategiaSequencia.greensG1}] | Reds: ${estrategiaSequencia.totalReds}
 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
 
 🎲 ESTATÍSTICAS APÓS EMPATE:
-Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${
+Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+    estrategiaAposEmpate.greensG0
+  } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
     estrategiaAposEmpate.totalReds
   }
 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
 
 🎲 ESTATÍSTICAS DE ALTERNÂNCIA:
-Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${
+Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+    estrategiaAlternancia.greensG0
+  } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
     estrategiaAlternancia.totalReds
   }
 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
+
+🎲 ESTATÍSTICAS DE PROPORÇÃO DINÂMICA:
+Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+    estrategiaProporcaoDinamica.greensG0
+  } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+    estrategiaProporcaoDinamica.totalReds
+  }
+Maior sequência de vitórias: ${
+    estrategiaProporcaoDinamica.maiorVitoriaConsecutiva
+  }
 
 🎯 Maior pontuação Player: ${maiorPontuacaoPlayer}
 🎯 Maior pontuação Banker: ${maiorPontuacaoBanker}
@@ -1330,7 +1869,9 @@ Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
   // Resumo específico para o grupo de Sequência
   await enviarTelegram(
     `📊 RESUMO PARCIAL - SEQUÊNCIA (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaSequencia.totalGreens} | Reds: ${
+✅ Greens: ${estrategiaSequencia.totalGreens} [G0=${
+      estrategiaSequencia.greensG0
+    } G1=${estrategiaSequencia.greensG1}] | Reds: ${
       estrategiaSequencia.totalReds
     }
 🔄 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
@@ -1349,7 +1890,9 @@ ${
   // Resumo específico para o grupo de Após Empate
   await enviarTelegram(
     `📊 RESUMO PARCIAL - APÓS EMPATE (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaAposEmpate.totalGreens} | Reds: ${
+✅ Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+      estrategiaAposEmpate.greensG0
+    } G1=${estrategiaAposEmpate.greensG1}] | Reds: ${
       estrategiaAposEmpate.totalReds
     }
 🔄 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
@@ -1370,7 +1913,9 @@ ${
   // Resumo específico para o grupo de Alternância
   await enviarTelegram(
     `📊 RESUMO PARCIAL - ALTERNÂNCIA (últimas ${contadorRodadas} rodadas):
-✅ Greens: ${estrategiaAlternancia.totalGreens} | Reds: ${
+✅ Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+      estrategiaAlternancia.greensG0
+    } G1=${estrategiaAlternancia.greensG1}] | Reds: ${
       estrategiaAlternancia.totalReds
     }
 🔄 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
@@ -1389,10 +1934,64 @@ ${
     )}%)`,
     "alternancia"
   );
+
+  // Resumo específico para o grupo de Proporção Dinâmica
+  await enviarTelegram(
+    `📊 RESUMO PARCIAL - PROPORÇÃO DINÂMICA (últimas ${contadorRodadas} rodadas):
+✅ Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+      estrategiaProporcaoDinamica.greensG0
+    } G1=${estrategiaProporcaoDinamica.greensG1}] | Reds: ${
+      estrategiaProporcaoDinamica.totalReds
+    }
+🔄 Maior sequência de vitórias: ${
+      estrategiaProporcaoDinamica.maiorVitoriaConsecutiva
+    }
+${
+  estrategiaProporcaoDinamica.vitoriaConsecutiva > 0
+    ? "🔥 Sequência atual: " +
+      estrategiaProporcaoDinamica.vitoriaConsecutiva +
+      " vitória(s) consecutiva(s)"
+    : ""
+}
+✅ PLAYER: ${totalPlayer} (${Math.round(
+      (totalPlayer / contadorRodadas) * 100
+    )}%)
+✅ BANKER: ${totalBanker} (${Math.round(
+      (totalBanker / contadorRodadas) * 100
+    )}%)`,
+    "proporcao"
+  );
 }
 
 // Função para relatório detalhado a cada 200 rodadas
 async function enviarRelatorioDetalhado() {
+  // Calcular as taxas de sucesso para cada estratégia
+  const calcularTaxa = (greens, total) => {
+    if (total === 0) return 0;
+    return Math.round((greens / total) * 100);
+  };
+
+  const taxaSequencia = calcularTaxa(
+    estrategiaSequencia.totalGreens,
+    estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds
+  );
+
+  const taxaAposEmpate = calcularTaxa(
+    estrategiaAposEmpate.totalGreens,
+    estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds
+  );
+
+  const taxaAlternancia = calcularTaxa(
+    estrategiaAlternancia.totalGreens,
+    estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds
+  );
+
+  const taxaProporcao = calcularTaxa(
+    estrategiaProporcaoDinamica.totalGreens,
+    estrategiaProporcaoDinamica.totalGreens +
+      estrategiaProporcaoDinamica.totalReds
+  );
+
   // Relatório completo para o grupo principal
   await enviarTelegram(`🔍 RELATÓRIO DETALHADO (RODADA #${contadorRodadas})
 
@@ -1406,11 +2005,9 @@ async function enviarRelatorioDetalhado() {
 ✅ TIE: ${totalTie} (${Math.round((totalTie / contadorRodadas) * 100)}%)
 
 🎲 ESTRATÉGIA DE SEQUÊNCIA:
-✅ Greens: ${estrategiaSequencia.totalGreens} (${Math.round(
-    (estrategiaSequencia.totalGreens /
-      (estrategiaSequencia.totalGreens + estrategiaSequencia.totalReds || 1)) *
-      100
-  )}% de aproveitamento)
+✅ Greens: ${estrategiaSequencia.totalGreens} [G0=${
+    estrategiaSequencia.greensG0
+  } G1=${estrategiaSequencia.greensG1}] (${taxaSequencia}% de aproveitamento)
 ❌ Reds: ${estrategiaSequencia.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaSequencia.maiorVitoriaConsecutiva}
 ${
@@ -1422,12 +2019,9 @@ ${
 }
 
 🎲 ESTRATÉGIA APÓS EMPATE:
-✅ Greens: ${estrategiaAposEmpate.totalGreens} (${Math.round(
-    (estrategiaAposEmpate.totalGreens /
-      (estrategiaAposEmpate.totalGreens + estrategiaAposEmpate.totalReds ||
-        1)) *
-      100
-  )}% de aproveitamento)
+✅ Greens: ${estrategiaAposEmpate.totalGreens} [G0=${
+    estrategiaAposEmpate.greensG0
+  } G1=${estrategiaAposEmpate.greensG1}] (${taxaAposEmpate}% de aproveitamento)
 ❌ Reds: ${estrategiaAposEmpate.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaAposEmpate.maiorVitoriaConsecutiva}
 ${
@@ -1439,18 +2033,35 @@ ${
 }
 
 🎲 ESTRATÉGIA DE ALTERNÂNCIA:
-✅ Greens: ${estrategiaAlternancia.totalGreens} (${Math.round(
-    (estrategiaAlternancia.totalGreens /
-      (estrategiaAlternancia.totalGreens + estrategiaAlternancia.totalReds ||
-        1)) *
-      100
-  )}% de aproveitamento)
+✅ Greens: ${estrategiaAlternancia.totalGreens} [G0=${
+    estrategiaAlternancia.greensG0
+  } G1=${
+    estrategiaAlternancia.greensG1
+  }] (${taxaAlternancia}% de aproveitamento)
 ❌ Reds: ${estrategiaAlternancia.totalReds}
 🔄 Maior sequência de vitórias: ${estrategiaAlternancia.maiorVitoriaConsecutiva}
 ${
   estrategiaAlternancia.vitoriaConsecutiva > 0
     ? "🔥 Sequência atual: " +
       estrategiaAlternancia.vitoriaConsecutiva +
+      " vitória(s) consecutiva(s)"
+    : ""
+}
+
+🎲 ESTRATÉGIA DE PROPORÇÃO DINÂMICA:
+✅ Greens: ${estrategiaProporcaoDinamica.totalGreens} [G0=${
+    estrategiaProporcaoDinamica.greensG0
+  } G1=${
+    estrategiaProporcaoDinamica.greensG1
+  }] (${taxaProporcao}% de aproveitamento)
+❌ Reds: ${estrategiaProporcaoDinamica.totalReds}
+🔄 Maior sequência de vitórias: ${
+    estrategiaProporcaoDinamica.maiorVitoriaConsecutiva
+  }
+${
+  estrategiaProporcaoDinamica.vitoriaConsecutiva > 0
+    ? "🔥 Sequência atual: " +
+      estrategiaProporcaoDinamica.vitoriaConsecutiva +
       " vitória(s) consecutiva(s)"
     : ""
 }
@@ -1464,6 +2075,9 @@ ${
 📈 Total de rodadas analisadas: ${contadorRodadas}
 
 📱 Bot monitorando 24/7 - Mantenha as apostas responsáveis!`);
+
+  // Relatórios específicos para cada grupo de estratégia
+  // Você pode adicionar relatórios detalhados para cada canal específico de estratégia se desejar
 }
 
 // Adicione esta nova função para enviar o relatório diário e reiniciar contadores
