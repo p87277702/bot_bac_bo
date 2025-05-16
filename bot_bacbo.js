@@ -105,8 +105,9 @@ let estrategiaProporcaoDinamica = {
 };
 
 // Configuração do Telegram
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_TOKEN = "7740348369:AAFSBFhXmEXXtgNR0gFgIsQam6nLzy_gHpM";
+const TELEGRAM_CHAT_ID = "6051804710"; // coloque aqui o chat ID real
+
 
 // Tokens e chat IDs para estratégias específicas
 const TELEGRAM_TOKEN_SEQUENCIA = process.env.TELEGRAM_TOKEN_SEQUENCIA;
